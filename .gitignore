@@ -1,0 +1,44 @@
+﻿# Secrets et configuration sensible
+.env
+.streamlit/secrets.toml
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Pytest
+.pytest_cache/
+.coverage
+
+# Virtual environments
+.venv
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Données sensibles
+data/analysis/*.csv
+data/processed/*.csv
+data/source/*.csv
+notebooks
+start_project.bat
+streamlit_app_enhanced.py
+api/app_local_enhanced.py
+mlruns/

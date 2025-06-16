@@ -1,0 +1,39 @@
+# =============================================================================
+# REQUIREMENTS.TXT - PRODUCTION DASHBOARD CREDIT SCORING
+# Version: Production v1.0
+# Plateformes: Streamlit Cloud + Railway
+# =============================================================================
+
+# Core Data Science (versions stables production)
+pandas==2.1.4
+numpy==1.26.2
+scikit-learn==1.3.2
+
+# Machine Learning & Modèles
+lightgbm==4.1.0
+joblib==1.3.2
+
+# Explainabilité (optionnel pour production)
+shap==0.44.1
+
+# Visualisation Interactive
+plotly==5.17.0
+matplotlib==3.8.2
+seaborn==0.13.0
+
+# Web Framework
+streamlit==1.29.0
+flask==3.0.0
+requests==2.31.0
+
+# Production & Déploiement
+gunicorn==21.2.0
+
+# Utilitaires
+python-dateutil==2.8.2
+pytz==2023.3
+six==1.16.0
+
+# Sécurité & Stabilité
+urllib3==2.1.0
+certifi==2023.11.17

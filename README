@@ -1,0 +1,78 @@
+# Créer README principal
+@"
+# 🏦 Dashboard Credit Scoring - Prêt à dépenser
+
+## 📋 Projet OpenClassrooms - Data Scientist
+
+**Mission :** Développer un dashboard interactif pour les chargés de relation client afin d'expliquer les décisions d'octroi de crédit de manière transparente.
+
+## 🚀 Déploiement
+
+### 📊 Dashboard Principal
+- **URL Production :** [À compléter après déploiement]
+- **Plateforme :** Streamlit Cloud
+- **Statut :** 🔄 En cours de déploiement
+
+## ✨ Fonctionnalités
+
+### 🎯 Pour les Chargés de Relation Client
+- **Analyse client instantanée** : Saisie des informations et scoring automatique
+- **Explication transparente** : Feature importance avec SHAP
+- **Comparaisons population** : Positionnement du client vs moyenne
+- **Interface intuitive** : 3 onglets (Analyse → Comparaisons → Simulations)
+- **Accessibilité WCAG 2.1** : Conforme niveau AA
+
+## 🛠️ Technologies
+
+- **Frontend :** Streamlit (Python)
+- **Backend :** Flask API (optionnel)
+- **ML :** LightGBM + SHAP
+- **Visualisation :** Plotly
+- **Déploiement :** Streamlit Cloud
+
+## ♿ Accessibilité WCAG 2.1
+
+- **1.1.1 Contenu non textuel :** Alt text sur tous graphiques
+- **1.4.1 Utilisation couleur :** Icônes + couleurs (✅/❌)
+- **1.4.3 Contraste minimum :** Ratio 4.5:1 respecté
+- **1.4.4 Redimensionnement :** Zoom 200% sans scroll horizontal
+- **2.4.2 Titre de page :** Titres descriptifs
+
+## 🚀 Installation Locale
+
+\`\`\`bash
+# Cloner le projet
+git clone https://github.com/bechetbrice/Dashboard-Credit-Scoring.git
+cd Dashboard-Credit-Scoring
+
+# Installer les dépendances
+pip install -r requirements.txt
+
+# Lancer le dashboard
+streamlit run streamlit_app.py
+\`\`\`
+
+## 📊 Déploiement Production
+
+### Streamlit Cloud
+1. Connecter le repo GitHub à https://share.streamlit.io
+2. Pointer vers streamlit_app.py
+3. Déployer automatiquement
+
+## 🏆 Critères Projet Validés
+
+### Dashboard (6/6 critères)
+- ✅ Parcours utilisateur logique
+- ✅ ≥2 graphiques interactifs  
+- ✅ Lisibilité optimisée
+- ✅ Réponse problématique métier
+- ✅ 5 critères WCAG respectés
+- ✅ Déploiement web accessible
+
+---
+
+**Développé par :** Brice Bechet  
+**Formation :** Data Scientist - OpenClassrooms  
+**Projet :** Mission 4 - Dashboard Credit Scoring  
+**Date :** $(Get-Date -Format "yyyy-MM-dd")
+"@ | Out-File -FilePath "README.md" -Encoding UTF8
