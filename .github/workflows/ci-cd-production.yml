@@ -178,7 +178,6 @@ jobs:
     name: 🌐 Validation API Flask
     runs-on: ubuntu-latest
     needs: code-validation
-    if: hashFiles('api/app_production.py') != ''
     
     steps:
     - name: 📥 Checkout du code
