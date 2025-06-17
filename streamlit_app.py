@@ -437,17 +437,13 @@ def display_prediction_result(result):
     if decision == "REFUSE":
         st.markdown(f"""
         <div class="metric-card error-card refused">
-            <h2>❌ CRÉDIT REFUSÉ</h2>
-            <p><strong>Probabilité de défaut: {probability:.1%}</strong></p>
-            <p>Niveau de risque: {risk_level}</p>
+            <h2>CRÉDIT REFUSÉ : Probabilité de défaut: {probability:.1%} - Niveau de risque: {risk_level}</h2>
         </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown(f"""
         <div class="metric-card success-card approved">
-            <h2>✅ CRÉDIT ACCORDÉ</h2>
-            <p><strong>Probabilité de défaut: {probability:.1%}</strong></p>
-            <p>Niveau de risque: {risk_level}</p>
+            <h2>CRÉDIT ACCORDÉ : Probabilité de défaut: {probability:.1%} - Niveau de risque: {risk_level}</h2>
         </div>
         """, unsafe_allow_html=True)
     
