@@ -102,7 +102,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Configuration API (Railway)
-API_URL = "API_URL", "https://dashboard-credit-scoring-production.up.railway.app"
+API_URL = "https://dashboard-credit-scoring-production.up.railway.app"
 
 # Traductions des features
 FEATURE_TRANSLATIONS = {
