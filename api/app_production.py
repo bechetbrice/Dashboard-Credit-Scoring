@@ -257,9 +257,10 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
 
-# Initialisation au démarrage
+# Initialisation FORCÉE au démarrage (Railway/Gunicorn)
+init_production_model()
+
+# Démarrage local seulement
 if __name__ == '__main__':
-    init_production_model()
-    
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
