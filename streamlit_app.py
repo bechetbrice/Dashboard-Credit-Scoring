@@ -574,8 +574,9 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
         else:
             client_value_numeric = 0
     elif variable_name == 'NAME_EDUCATION_TYPE_Higher_education':
-        # client_value est déjà 0 ou 1
-        client_value_numeric = client_value
+        # Convertir les booléens True/False en 1/0 pour l'affichage
+        values = [1 if v else 0 for v in values]
+        client_value_numeric = client_value  # Déjà 0 ou 1
     else:
         client_value_numeric = client_value
     
