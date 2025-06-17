@@ -23,6 +23,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Configuration Plotly pour accessibilité WCAG
+PLOTLY_CONFIG = {
+    'displayModeBar': True,
+    'displaylogo': False,
+    'modeBarButtonsToRemove': ['pan2d', 'lasso2d', 'select2d'],
+    'accessible': True,
+    'toImageButtonOptions': {
+        'format': 'png',
+        'filename': 'graphique_credit_scoring',
+        'height': 500,
+        'width': 700,
+        'scale': 1
+    }
+}
+
 # CSS WCAG pour production
 st.markdown("""
 <style>
@@ -119,17 +134,16 @@ FEATURE_TRANSLATIONS = {
 }
 
 FEATURE_EXPLANATIONS = {
-    "EXT_SOURCE_2": "Score externe 2 (0=mauvais, 1=excellent)",
-    "EXT_SOURCE_3": "Score externe 3 (0=mauvais, 1=excellent)",
-    "EXT_SOURCE_1": "Score externe 1 (0=mauvais, 1=excellent)",
-    "DAYS_EMPLOYED": "Ancienneté dans l'emploi actuel (jours négatifs)",
-    "PAYMENT_RATE": "Ratio d'endettement par rapport aux revenus",
-    "AMT_ANNUITY": "Montant mensuel que le client devra payer",
-    "INSTAL_DPD_MEAN": "Retards moyens sur paiements antérieurs (jours)",
-    "AMT_ANNUITY": "Montant de l'annuité mensuelle",
-    "INSTAL_AMT_PAYMENT_SUM": "Somme historique des paiements",
-    "CODE_GENDER": "Genre du client",
-    "NAME_EDUCATION_TYPE_Higher_education": "Niveau d'éducation supérieure"
+    "EXT_SOURCE_2": "Un score externe 2 élevé diminue le risque de défaut",
+    "EXT_SOURCE_3": "Un score externe 3 élevé diminue le risque de défaut", 
+    "EXT_SOURCE_1": "Un score externe 1 élevé diminue le risque de défaut",
+    "DAYS_EMPLOYED": "Une ancienneté dans l'emploi actuel élevée diminue le risque de défaut",
+    "PAYMENT_RATE": "Un ratio d'endettement bas diminue le risque de défaut",
+    "CODE_GENDER": "Un client homme augmente légèrement le risque de défaut par rapport à une femme",
+    "INSTAL_DPD_MEAN": "Des retards moyens élevés sur paiements antérieurs augmentent le risque de défaut",
+    "NAME_EDUCATION_TYPE_Higher_education": "Une éducation supérieure augmente légèrement le risque de défaut",
+    "AMT_ANNUITY": "Une annuité mensuelle élevée augmente le risque de défaut",
+    "INSTAL_AMT_PAYMENT_SUM": "Un historique de paiements important diminue le risque de défaut"
 }
 
 # Les 10 variables dashboard
@@ -229,12 +243,11 @@ def create_client_form():
     
     with st.expander("ℹ️ Guide d'utilisation", expanded=False):
         st.markdown("""
-        **Pour les chargés de relation client :**           
-        - Un **score externe** bas engendre un risque plus elévé de defaut de paiement qu'un score externe haut (0 = risqué, 1 = sûr)
-        - Une **ancienneté d'emploi** importante diminue le risque de défaut de paiement
-        - Un **ratio d'endettement** = charges / revenus (max 100%)
-        - Les **retards moyens** = nombre moyen de jours de retard sur les paiements précédents
-        - Vous pouvez **modifier** les valeurs pour des **simulations**
+        ### 🚀 **Prêt à commencer ?**
+        1. **Saisissez** les informations client dans le formulaire ci-dessous
+        2. **Analysez** le dossier en cliquant sur "Analyser ce client"  
+        3. **Explorez** les onglets Résultats, Comparaisons et Analyses
+        4. **Simulez** différents scénarios si nécessaire        
         """)
     
     # Valeurs par défaut (ou valeurs précédentes si modification)
@@ -275,7 +288,7 @@ def create_client_form():
             0.0, 40.0, 
             float(default_employment), 
             0.01,
-            help="Années dans l'emploi actuel"
+            help=FEATURE_EXPLANATIONS["DAYS_EMPLOYED"]
         )
         
         instal_dpd_mean = st.slider(
@@ -283,7 +296,7 @@ def create_client_form():
             0.0, 30.0, 
             float(default_values.get('INSTAL_DPD_MEAN', 0.5)), 
             0.1,
-            help="Nombre moyen de jours de retard sur les paiements antérieurs"
+            help=FEATURE_EXPLANATIONS["INSTAL_DPD_MEAN"]
         )
         
     with col2:
@@ -404,7 +417,13 @@ def display_prediction_result(result):
         font={'color': "black", 'family': "Arial", 'size': 16}
     )
     
-    st.plotly_chart(fig_gauge, use_container_width=True)
+    st.plotly_chart(fig_gauge, use_container_width=True, config=PLOTLY_CONFIG)
+    
+    # WCAG 1.1.1 : Texte alternatif pour la jauge
+    st.markdown(f"""
+    **Description graphique :** Jauge de risque affichant {probability:.1%} de probabilité de défaut de paiement. 
+    Le seuil de décision est fixé à 10%. Ce client se situe dans la zone {'rouge (risque élevé)' if probability >= 0.1 else 'verte (risque faible)'}.
+    """)
 
 def display_feature_importance(result):
     """Afficher importance des variables avec graphique et tableau détaillé"""
@@ -417,7 +436,6 @@ def display_feature_importance(result):
         return
     
     st.markdown("#### 🔍 Interprétation de la décision")
-    st.markdown("**Impact des variables sur la décision**")
     
     # Créer données complètes pour toutes les variables
     all_features_data = []
@@ -498,10 +516,20 @@ def display_feature_importance(result):
     
     fig.add_vline(x=0, line_dash="dash", line_color="gray", line_width=2)
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+    
+    # WCAG 1.1.1 : Texte alternatif pour graphique feature importance
+    positive_features = [f['feature_fr'] for f in all_features_data if f['shap_value'] > 0]
+    negative_features = [f['feature_fr'] for f in all_features_data if f['shap_value'] < 0]
+    
+    st.markdown(f"""
+    **Description graphique :** Graphique en barres horizontales montrant l'impact de chaque variable sur la décision. 
+    Variables augmentant le risque (barres rouges) : {', '.join(positive_features[:3]) if positive_features else 'Aucune'}. 
+    Variables diminuant le risque (barres vertes) : {', '.join(negative_features[:3]) if negative_features else 'Aucune'}.
+    """)
     
     # Tableau détaillé
-    with st.expander("📋 Tableau Détaillé de Toutes les Variables Saisissables", expanded=True):
+    with st.expander("📋 Tableau détaillé", expanded=True):
         
         # Préparer données pour le tableau
         table_data = []
@@ -567,6 +595,9 @@ def display_client_profile(client_data):
         st.metric("Score Externe 3", f"{client_data.get('EXT_SOURCE_3', 0):.3f}")
         st.metric("Score Externe 1", f"{client_data.get('EXT_SOURCE_1', 0):.3f}")
         st.metric("Retards moyens", f"{client_data.get('INSTAL_DPD_MEAN', 0):.1f} jours")
+        
+        # WCAG 1.1.1 : Description textuelle des métriques
+        st.caption("Scores externes : indicateurs de solvabilité (0=risqué, 1=sûr). Retards : moyenne des jours de retard sur paiements antérieurs.")
     
     with col2:
         employment_years = abs(client_data.get('DAYS_EMPLOYED', 0)) / 365.25
@@ -577,6 +608,9 @@ def display_client_profile(client_data):
         
         payment_rate = client_data.get('PAYMENT_RATE', 0)
         st.metric("Ratio endettement", f"{payment_rate:.1%}")
+        
+        # WCAG 1.1.1 : Description textuelle des métriques
+        st.caption("Ancienneté emploi : durée dans le poste actuel. Ratio endettement : charges mensuelles / revenus.")
     
     with col3:
         annuity = client_data.get('AMT_ANNUITY', 0)
@@ -587,6 +621,9 @@ def display_client_profile(client_data):
         
         payment_sum = client_data.get('INSTAL_AMT_PAYMENT_SUM', 0)
         st.metric("Hist. paiements", f"{payment_sum:,.0f} €")
+        
+        # WCAG 1.1.1 : Description textuelle des métriques
+        st.caption("Annuité : montant mensuel du crédit. Historique : cumul des paiements antérieurs.")
 
 def create_simple_population_plot(distribution_data, client_value, variable_name):
     """Créer histogramme simple : distribution population + ligne client"""
@@ -666,7 +703,24 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
     
     fig.update_layout(layout_config)
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+    
+    # WCAG 1.1.1 : Texte alternatif pour histogramme population
+    variable_fr = FEATURE_TRANSLATIONS.get(variable_name, variable_name)
+    
+    if variable_name in ['CODE_GENDER', 'NAME_EDUCATION_TYPE_Higher_education']:
+        st.markdown(f"""
+        **Description graphique :** Histogramme de répartition de la variable {variable_fr} dans la population. 
+        Graphique en barres montrant la distribution des clients selon cette caractéristique. 
+        La position du client analysé est marquée par une ligne rouge verticale.
+        """)
+    else:
+        client_val_formatted = f"{client_value_numeric:.2f}" if isinstance(client_value_numeric, (int, float)) else str(client_value_numeric)
+        st.markdown(f"""
+        **Description graphique :** Histogramme de distribution de la variable {variable_fr} dans la population. 
+        L'axe horizontal représente les valeurs de {variable_fr}, l'axe vertical le nombre de clients. 
+        Le client analysé (valeur: {client_val_formatted}) est positionné par une ligne rouge verticale.
+        """)
 
 def display_simple_population_comparison(client_data):
     """Interface : dropdown + graphique"""
@@ -745,7 +799,7 @@ if not st.session_state.client_analyzed:
 
 else:
     # Étape 2 : Résultats et analyses
-    tab1, tab2, tab3 = st.tabs(["🎯 Résultats", "📊 Comparaisons", "🔧 Analyses"])
+    tab1, tab2, tab3 = st.tabs(["🎯 Résultats", "📊 Comparaisons", "🔧 Analyses bi-variées"])
     
     with tab1:
         st.markdown("### 🎯 Résultat de l'analyse")
@@ -831,7 +885,18 @@ else:
                     )
                     
                     fig.update_layout(height=500)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+                    
+                    # WCAG 1.1.1 : Texte alternatif pour analyse bi-variée
+                    correlation = np.corrcoef(x_data, y_data)[0, 1] if len(x_data) > 1 else 0
+                    var1_fr = FEATURE_TRANSLATIONS.get(var1, var1)
+                    var2_fr = FEATURE_TRANSLATIONS.get(var2, var2)
+                    
+                    st.markdown(f"""
+                    **Description graphique :** Nuage de points montrant la relation entre {var1_fr} (axe horizontal) et {var2_fr} (axe vertical). 
+                    Chaque point représente un client. Corrélation : {correlation:.3f}. 
+                    {'Relation positive' if correlation > 0.3 else 'Relation négative' if correlation < -0.3 else 'Relation faible'} entre les deux variables.
+                    """)
                     
                 else:
                     st.error("Données insuffisantes pour une des variables")
