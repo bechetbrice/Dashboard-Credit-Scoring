@@ -571,14 +571,11 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
         # Convertir M/F en 1/0 pour le graphique
         if client_value == 'M':
             client_value_numeric = 1
-            gender_labels = {0: 'Femme', 1: 'Homme'}
         else:
             client_value_numeric = 0
-            gender_labels = {0: 'Femme', 1: 'Homme'}
     elif variable_name == 'NAME_EDUCATION_TYPE_Higher_education':
         # client_value est déjà 0 ou 1
         client_value_numeric = client_value
-        education_labels = {0: 'Non', 1: 'Oui'}
     else:
         client_value_numeric = client_value
     
@@ -608,28 +605,34 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
     except (TypeError, ValueError):
         st.warning(f"Impossible d'afficher la position client pour {variable_name}")
     
-    # Configuration du graphique
-    fig.update_layout(
-        title=f"{FEATURE_TRANSLATIONS.get(variable_name, variable_name)}",
-        xaxis_title=f"{FEATURE_TRANSLATIONS.get(variable_name, variable_name)}",
-        yaxis_title="Nombre de clients",
-        height=400,
-        showlegend=False
-    )
+    # Configuration du graphique avec layout
+    layout_config = {
+        'title': f"{FEATURE_TRANSLATIONS.get(variable_name, variable_name)}",
+        'xaxis': {
+            'title': f"{FEATURE_TRANSLATIONS.get(variable_name, variable_name)}"
+        },
+        'yaxis': {
+            'title': "Nombre de clients"
+        },
+        'height': 400,
+        'showlegend': False
+    }
     
     # Labels spéciaux pour variables catégorielles
     if variable_name == 'CODE_GENDER':
-        fig.update_xaxis(
-            tickmode='array',
-            tickvals=[0, 1],
-            ticktext=['Femme', 'Homme']
-        )
+        layout_config['xaxis'].update({
+            'tickmode': 'array',
+            'tickvals': [0, 1],
+            'ticktext': ['Femme', 'Homme']
+        })
     elif variable_name == 'NAME_EDUCATION_TYPE_Higher_education':
-        fig.update_xaxis(
-            tickmode='array',
-            tickvals=[0, 1],
-            ticktext=['Non', 'Oui']
-        )
+        layout_config['xaxis'].update({
+            'tickmode': 'array',
+            'tickvals': [0, 1],
+            'ticktext': ['Non', 'Oui']
+        })
+    
+    fig.update_layout(layout_config)
     
     st.plotly_chart(fig, use_container_width=True)
 
