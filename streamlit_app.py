@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS WCAG conforme pour production
+# CSS WCAG pour production
 st.markdown("""
 <style>
 /* Styles WCAG conformes */
@@ -119,9 +119,9 @@ FEATURE_TRANSLATIONS = {
 }
 
 FEATURE_EXPLANATIONS = {
-    "EXT_SOURCE_2": "Score externe principal (0=mauvais, 1=excellent)",
-    "EXT_SOURCE_3": "Score externe complémentaire",
-    "EXT_SOURCE_1": "Premier score externe (peut être manquant)",
+    "EXT_SOURCE_2": "Score externe 2 (0=mauvais, 1=excellent)",
+    "EXT_SOURCE_3": "Score externe 3 (0=mauvais, 1=excellent)",
+    "EXT_SOURCE_1": "Score externe 1 (0=mauvais, 1=excellent)",
     "DAYS_EMPLOYED": "Ancienneté dans l'emploi actuel (jours négatifs)",
     "PAYMENT_RATE": "Ratio d'endettement par rapport aux revenus",
     "AMT_ANNUITY": "Montant mensuel que le client devra payer",
@@ -229,10 +229,10 @@ def create_client_form():
     
     with st.expander("ℹ️ Guide d'utilisation", expanded=False):
         st.markdown("""
-        **Pour les chargés de relation client :**
-        - Les **scores externes** viennent des bureaux de crédit (0 = risqué, 1 = sûr)
-        - L'**ancienneté emploi** est en années positives
-        - Le **ratio d'endettement** = charges / revenus (max 100%)
+        **Pour les chargés de relation client :**           
+        - Un **score externe** bas engendre un risque plus elévé de defaut de paiement qu'un score externe haut (0 = risqué, 1 = sûr)
+        - Une **ancienneté d'emploi** importante diminue le risque de défaut de paiement
+        - Un **ratio d'endettement** = charges / revenus (max 100%)
         - Les **retards moyens** = nombre moyen de jours de retard sur les paiements précédents
         - Vous pouvez **modifier** les valeurs pour des **simulations**
         """)
@@ -243,10 +243,9 @@ def create_client_form():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("**📊 Scores Externes (Critiques)**")
         
         ext_source_2 = st.slider(
-            "Score Externe 2*", 
+            "Score Externe 2", 
             0.0, 1.0, 
             float(default_values.get('EXT_SOURCE_2', 0.6)), 
             0.01,
@@ -254,7 +253,7 @@ def create_client_form():
         )
         
         ext_source_3 = st.slider(
-            "Score Externe 3*", 
+            "Score Externe 3", 
             0.0, 1.0, 
             float(default_values.get('EXT_SOURCE_3', 0.5)), 
             0.01,
@@ -417,8 +416,8 @@ def display_feature_importance(result):
         st.warning("Explications des variables non disponibles")
         return
     
-    st.markdown("#### 🔍 Interprétation de la Décision")
-    st.markdown("**Impact de TOUTES les Variables Saisissables sur la Décision**")
+    st.markdown("#### 🔍 Interprétation de la décision")
+    st.markdown("**Impact des variables sur la décision**")
     
     # Créer données complètes pour toutes les variables
     all_features_data = []
@@ -486,7 +485,7 @@ def display_feature_importance(result):
             "Diminue le risque": "#22c55e",
             "Impact neutre": "#94a3b8"
         },
-        title="Impact de TOUTES les Variables Saisissables sur la Décision"
+        title="Impact des variables sur la décision"
     )
     
     fig.update_layout(
@@ -494,7 +493,7 @@ def display_feature_importance(result):
         showlegend=True,
         font={'size': 12},
         xaxis_title="Impact sur la prédiction",
-        yaxis_title="Variables Saisissables"
+        yaxis_title="Variables"
     )
     
     fig.add_vline(x=0, line_dash="dash", line_color="gray", line_width=2)
@@ -548,7 +547,7 @@ def display_feature_importance(result):
     # Explication pédagogique
     st.markdown("""
     <div class="alert-info">
-        <strong>💡 Lecture du graphique des variables saisissables :</strong><br>
+        <strong>💡 Lecture du graphique des variables :</strong><br>
         • <span style="color: #22c55e;"><strong>Barres vertes (valeurs négatives)</strong></span> : Ces variables réduisent le risque de défaut<br>
         • <span style="color: #ff4444;"><strong>Barres rouges (valeurs positives)</strong></span> : Ces variables augmentent le risque de défaut<br>
         • <span style="color: #94a3b8;"><strong>Barres grises (proche de zéro)</strong></span> : Ces variables ont un impact neutre ou très faible<br>
@@ -670,10 +669,8 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
     st.plotly_chart(fig, use_container_width=True)
 
 def display_simple_population_comparison(client_data):
-    """Interface simple : dropdown + graphique"""
-    
-    st.markdown("#### 📊 Position vs Population")
-    
+    """Interface : dropdown + graphique"""
+       
     # Sélecteur de variable (les 10 variables)
     selected_variable = st.selectbox(
         "Variable à analyser :",
@@ -695,16 +692,6 @@ def display_simple_population_comparison(client_data):
     else:
         st.error(f"Impossible de charger les données pour {selected_variable}")
         
-        # Info pour debugging
-        st.info("""
-        **Possible causes :**
-        - Variable non présente dans population_distribution.json
-        - Problème de connexion API
-        - Variable avec trop de valeurs manquantes
-        
-        **Variables généralement disponibles :** EXT_SOURCE_2, EXT_SOURCE_3, PAYMENT_RATE, AMT_ANNUITY
-        """)
-
 # Interface principale
 
 st.markdown('<div class="main-header">🏦 Dashboard Credit Scoring<br>Prêt à dépenser</div>', unsafe_allow_html=True)
@@ -715,13 +702,6 @@ api_ok, api_info = test_api_connection()
 if not api_ok:
     st.error("""
     ⚠️ **API non accessible**
-    
-    L'API de scoring n'est pas disponible. Cela peut être dû à :
-    - Déploiement en cours sur Railway
-    - Problème de connexion réseau
-    - Maintenance du service
-    
-    Veuillez réessayer dans quelques minutes.
     """)
     st.stop()
 
@@ -729,7 +709,7 @@ if not api_ok:
 with st.sidebar:
     st.markdown("### 📋 Navigation")
     
-    if st.button("🆕 Nouveau Dossier Client", use_container_width=True):
+    if st.button("🆕 Nouveau client", use_container_width=True):
         st.session_state.client_analyzed = False
         st.session_state.client_data = None
         st.session_state.prediction_result = None
@@ -746,7 +726,7 @@ with st.sidebar:
 # Interface principale avec onglets
 if not st.session_state.client_analyzed:
     # Étape 1 : Saisie client
-    st.markdown("### 📝 Nouveau Dossier Client")
+    st.markdown("### 📝 Nouveau client")
     
     client_data = create_client_form()
     
@@ -768,12 +748,12 @@ else:
     tab1, tab2, tab3 = st.tabs(["🎯 Résultats", "📊 Comparaisons", "🔧 Analyses"])
     
     with tab1:
-        st.markdown("### 🎯 Résultat de l'Analyse")
+        st.markdown("### 🎯 Résultat de l'analyse")
         
         # Bouton pour modifier/simuler
         col1, col2 = st.columns([3, 1])
         with col2:
-            if st.button("🔧 Modifier / Simuler", use_container_width=True):
+            if st.button("🔧 Modifier", use_container_width=True):
                 st.session_state.client_analyzed = False
                 st.rerun()
         
@@ -791,13 +771,13 @@ else:
         display_feature_importance(st.session_state.prediction_result)
     
     with tab2:
-        st.markdown("### 📊 Comparaisons Population")
+        st.markdown("### 📊 Comparaisons avec la base clients")
         
         # Interface simple : dropdown + graphique
         display_simple_population_comparison(st.session_state.client_data)
     
     with tab3:
-        st.markdown("### 🔧 Analyse Bi-variée")
+        st.markdown("### 🔧 Analyse bi-variée")
         
         col1, col2 = st.columns(2)
         
@@ -871,7 +851,8 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown("**🏦 Prêt à dépenser**")
     st.markdown("Dashboard Credit Scoring")
-    st.markdown("Version Production v2.0")
+    st.markdown("Brice Béchet")
+    st.markdown("Juin 2025 - Master 2 Data Scientist - OpenClassRoom")
 
 with col2:
     st.markdown("**✅ Fonctionnalités**")
@@ -886,16 +867,3 @@ with col3:
     st.markdown("• Contrastes élevés")
     st.markdown("• Textes alternatifs")
     st.markdown("• Interface responsive")
-
-# Informations techniques cachées
-with st.expander("🔧 Informations Techniques", expanded=False):
-    st.markdown(f"""
-    **Configuration Production :**
-    - API URL: {API_URL}
-    - Streamlit Cloud: ✅ Déployé
-    - Railway API: {'✅ Connectée' if api_ok else '❌ Déconnectée'}
-    - Cache: 5-10 minutes
-    - WCAG 2.1: Niveau AA
-    
-    **Support :** Cette interface est optimisée pour les chargés de relation client.
-    """)
