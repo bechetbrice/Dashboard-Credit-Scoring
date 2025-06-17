@@ -217,7 +217,6 @@ def init_session_state():
         'client_analyzed': False,
         'client_data': None,
         'prediction_result': None,
-        'refresh_comparison': False,
         'form_submitted': False,
         'last_analysis_time': None
     }
@@ -437,13 +436,17 @@ def display_prediction_result(result):
     if decision == "REFUSE":
         st.markdown(f"""
         <div class="metric-card error-card refused">
-            <h2>CRÉDIT REFUSÉ : Probabilité de défaut: {probability:.1%} - Niveau de risque: {risk_level}</h2>
+            <h2>❌ CRÉDIT REFUSÉ</h2>
+            <p><strong>Probabilité de défaut: {probability:.1%}</strong></p>
+            <p>Niveau de risque: {risk_level}</p>
         </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown(f"""
         <div class="metric-card success-card approved">
-            <h2>CRÉDIT ACCORDÉ : Probabilité de défaut: {probability:.1%} - Niveau de risque: {risk_level}</h2>
+            <h2>✅ CRÉDIT ACCORDÉ</h2>
+            <p><strong>Probabilité de défaut: {probability:.1%}</strong></p>
+            <p>Niveau de risque: {risk_level}</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -816,9 +819,13 @@ def display_simple_population_comparison(client_data):
         )
     
     with col2:
-        # Bouton qui change juste un flag SANS st.rerun()
-        if st.button("📊 Actualiser", key="refresh_comparison", help="Actualiser le graphique"):
-            st.session_state.refresh_comparison = not st.session_state.refresh_comparison
+        # SOLUTION: Bouton sans modifier session_state
+        refresh_clicked = st.button("📊 Actualiser", help="Actualiser le graphique")
+        
+        # Optionnel: juste pour information visuelle
+        if refresh_clicked:
+            st.success("Graphique actualisé !")
+            time.sleep(0.5)  # Petit délai visuel
     
     # Récupérer les données de distribution
     distribution_data = get_population_distribution(selected_variable)
