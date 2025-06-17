@@ -45,7 +45,7 @@ def init_production_model():
     
     try:
         # Tentative de chargement modèle réel
-        model_files = ['lightgbm_final_model.pkl', 'best_model.pkl']
+        model_files = ['lightgbm_final_model_optimized.pkl']
         model_loaded = False
         
         for model_file in model_files:
