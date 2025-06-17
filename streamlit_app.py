@@ -760,9 +760,6 @@ else:
     with tab3:
         st.markdown("### 🔧 Analyse Bi-variée")
         
-        # Récupérer les variables disponibles depuis l'API réelle
-        st.info("Sélectionnez deux variables pour analyser leur relation avec les vraies données population")
-        
         col1, col2 = st.columns(2)
         
         with col1:
@@ -781,7 +778,7 @@ else:
             )
         
         if st.button("📈 Analyser Relation", use_container_width=True):
-            with st.spinner("Analyse en cours avec vraies données..."):
+            with st.spinner("Analyse en cours..."):
                 # Récupérer les vraies distributions pour les 2 variables
                 dist1 = get_population_distribution(var1)
                 dist2 = get_population_distribution(var2)
@@ -802,17 +799,7 @@ else:
                     x_data = values1[:min_len]
                     y_data = values2[:min_len]
                     
-                    # Échantillonnage pour performance (max 2000 points)
-                    if min_len > 2000:
-                        import random
-                        indices = random.sample(range(min_len), 2000)
-                        x_data = [x_data[i] for i in indices]
-                        y_data = [y_data[i] for i in indices]
-                    
-                    # Calcul corrélation
-                    correlation = np.corrcoef(x_data, y_data)[0, 1]
-                    
-                    # Graphique de corrélation
+                    # Graphique de corrélation avec TOUT l'échantillon
                     fig = px.scatter(
                         x=x_data,
                         y=y_data,
@@ -826,31 +813,6 @@ else:
                     
                     fig.update_layout(height=500)
                     st.plotly_chart(fig, use_container_width=True)
-                    
-                    # Métrique de corrélation
-                    col1, col2, col3, col4 = st.columns(4)
-                    
-                    with col1:
-                        st.metric("Corrélation", f"{correlation:.3f}")
-                    
-                    with col2:
-                        if abs(correlation) > 0.7:
-                            strength = "Forte"
-                        elif abs(correlation) > 0.3:
-                            strength = "Modérée"
-                        else:
-                            strength = "Faible"
-                        st.metric("Force", strength)
-                    
-                    with col3:
-                        direction = "Positive" if correlation > 0 else "Négative"
-                        st.metric("Direction", direction)
-                    
-                    with col4:
-                        st.metric("Échantillon", f"{len(x_data):,} clients")
-                    
-                    # Info sur données réelles
-                    st.success("✅ Analyse basée sur vraies données train_preprocessed.csv")
                     
                 else:
                     st.error("Données insuffisantes pour une des variables")
