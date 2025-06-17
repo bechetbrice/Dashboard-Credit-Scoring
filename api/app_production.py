@@ -150,13 +150,21 @@ def predict_dashboard():
     
     # Feature importance simulée
     feature_importance = []
-    for i, feature in enumerate(PRODUCTION_FEATURES[:5]):
+    for i, feature in enumerate(PRODUCTION_FEATURES[:5]):  # Top 5
         if feature in data:
-            impact = (data[feature] - 0.5) * np.random.uniform(-0.1, 0.1)
+            # Conversion sécurisée en float
+            try:
+                feature_value = float(data[feature])
+                impact = (feature_value - 0.5) * np.random.uniform(-0.1, 0.1)
+            except (ValueError, TypeError):
+                # Si conversion impossible, utiliser valeur par défaut
+                feature_value = 0.5
+                impact = 0.0
+            
             feature_importance.append({
                 'feature': feature,
                 'shap_value': float(impact),
-                'feature_value': data[feature],
+                'feature_value': feature_value,
                 'impact': 'positive' if impact > 0 else 'negative'
             })
     
