@@ -1,7 +1,7 @@
 """
 API Flask Production - Dashboard Credit Scoring
-Version: Railway v4.0 - UTILISATION FICHIERS OPTIMISÉS
-Correction: Utilisation de final_features_list.json, optimal_threshold_optimized.pkl, optimized_hyperparameters.json
+Version: Railway v5.0 - VRAIES DONNÉES POPULATION
+Correction: Utilisation de population_distribution.json avec vraies données
 """
 
 from flask import Flask, request, jsonify
@@ -32,7 +32,7 @@ model = None
 threshold = None
 feature_names = None
 hyperparameters = None
-population_stats = None
+population_distributions = None
 explainer = None
 
 # Features dashboard (10 variables saisissables - CONSERVÉES)
@@ -93,11 +93,92 @@ def load_hyperparameters_cached():
     with open(hyperparams_path, 'r') as f:
         return json.load(f)
 
-def init_railway_model():
-    """Initialisation modèle Railway avec fichiers optimisés"""
-    global model, threshold, feature_names, hyperparameters, population_stats, explainer
+@lru_cache(maxsize=1)
+def load_real_population_distributions():
+    """Charger les vraies distributions population depuis JSON"""
+    population_path = DATA_DIR / "population_distribution.json"
     
-    logger.info("🚀 INITIALISATION RAILWAY avec fichiers optimisés...")
+    if not population_path.exists():
+        logger.warning(f"Distributions population non trouvées: {population_path}")
+        return None
+    
+    try:
+        with open(population_path, 'r') as f:
+            distributions = json.load(f)
+        
+        logger.info(f"✅ Vraies distributions chargées: {len(distributions)} variables")
+        
+        # Log info pour chaque variable
+        for var, values in distributions.items():
+            if isinstance(values, list):
+                logger.info(f"  - {var}: {len(values):,} vraies valeurs")
+        
+        return distributions
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur chargement distributions: {str(e)}")
+        return None
+
+def generate_population_stats_from_real_data():
+    """Générer stats compatibles depuis vraies distributions"""
+    if population_distributions is None:
+        logger.warning("Pas de vraies distributions, utilisation fallback")
+        return generate_fallback_population_data()
+    
+    stats = {}
+    
+    for variable, values in population_distributions.items():
+        if variable in DASHBOARD_FEATURES and isinstance(values, list) and len(values) > 0:
+            # Convertir en numpy array pour calculs
+            np_values = np.array(values)
+            
+            stats[variable] = {
+                'mean': float(np.mean(np_values)),
+                'median': float(np.median(np_values)),
+                'std': float(np.std(np_values)),
+                'values': values  # Toutes les vraies valeurs
+            }
+            
+            logger.info(f"✅ Stats {variable}: {len(values):,} vraies valeurs")
+    
+    logger.info(f"✅ Stats générées depuis vraies données: {len(stats)} variables")
+    return stats
+
+def generate_fallback_population_data():
+    """Fallback avec données simulées si vraies données indisponibles"""
+    logger.warning("⚠️ Utilisation données simulées (fallback)")
+    
+    np.random.seed(42)
+    
+    data = {}
+    for feature in DASHBOARD_FEATURES:
+        if 'EXT_SOURCE' in feature:
+            values = (np.random.beta(2, 2, 1000) * 0.8 + 0.1).tolist()
+        elif feature == 'DAYS_EMPLOYED':
+            values = np.clip(np.random.normal(-3000, 2000, 1000), -15000, 0).tolist()
+        elif feature == 'PAYMENT_RATE':
+            values = (np.random.beta(2, 8, 1000)).tolist()
+        elif feature == 'AMT_ANNUITY':
+            values = np.clip(np.random.normal(25000, 10000, 1000), 5000, 80000).tolist()
+        elif feature == 'INSTAL_AMT_PAYMENT_SUM':
+            values = np.clip(np.random.normal(150000, 50000, 1000), 10000, 500000).tolist()
+        else:
+            values = np.clip(np.random.normal(5, 2, 1000), 0, 20).tolist()
+        
+        data[feature] = {
+            'mean': float(np.mean(values)),
+            'median': float(np.median(values)),
+            'std': float(np.std(values)),
+            'values': values
+        }
+    
+    return data
+
+def init_railway_model():
+    """Initialisation modèle Railway avec vraies données population"""
+    global model, threshold, feature_names, hyperparameters, population_distributions, explainer
+    
+    logger.info("🚀 INITIALISATION RAILWAY avec vraies données population...")
     
     try:
         # Chargement modèle LightGBM
@@ -132,9 +213,8 @@ def init_railway_model():
         dashboard_in_model = [f for f in DASHBOARD_FEATURES if f in feature_names or any(f in fname for fname in feature_names)]
         logger.info(f"✅ Features dashboard validées: {len(dashboard_in_model)}/10")
         
-        # Population stats simplifiées pour dashboard
-        population_stats = generate_population_data()
-        logger.info("✅ Données population générées")
+        # NOUVEAU: Charger vraies distributions population
+        population_distributions = load_real_population_distributions()
         
         # Initialiser SHAP si possible
         try:
@@ -148,47 +228,15 @@ def init_railway_model():
             logger.warning(f"⚠️ SHAP non initialisé: {str(e)}")
             explainer = None
         
-        logger.info("✅ RAILWAY initialisé avec succès - FICHIERS OPTIMISÉS")
+        logger.info("✅ RAILWAY initialisé avec succès - VRAIES DONNÉES POPULATION")
         return True
         
     except Exception as e:
         logger.error(f"❌ ERREUR CRITIQUE Railway: {str(e)}")
         raise e
 
-def generate_population_data():
-    """Génération données population pour comparaisons (INCHANGÉ)"""
-    np.random.seed(42)
-    
-    data = {}
-    for feature in DASHBOARD_FEATURES:
-        if 'EXT_SOURCE' in feature:
-            values = np.random.beta(2, 2, 1000) * 0.8 + 0.1
-        elif feature == 'DAYS_EMPLOYED':
-            values = np.random.normal(-3000, 2000, 1000)
-            values = np.clip(values, -15000, 0)
-        elif feature == 'PAYMENT_RATE':
-            values = np.random.beta(2, 8, 1000)
-        elif feature == 'AMT_ANNUITY':
-            values = np.random.normal(25000, 10000, 1000)
-            values = np.clip(values, 5000, 80000)
-        elif feature == 'INSTAL_AMT_PAYMENT_SUM':
-            values = np.random.normal(150000, 50000, 1000)
-            values = np.clip(values, 10000, 500000)
-        else:
-            values = np.random.normal(5, 2, 1000)
-            values = np.clip(values, 0, 20)
-        
-        data[feature] = {
-            'mean': float(np.mean(values)),
-            'median': float(np.median(values)),
-            'std': float(np.std(values)),
-            'values': values[:500].tolist()
-        }
-    
-    return data
-
 def prepare_features_complete(client_data):
-    """Préparer vecteur complet avec features réelles du JSON"""
+    """Préparer vecteur complet avec features réelles du JSON (INCHANGÉ)"""
     
     # Créer vecteur complet avec valeurs par défaut intelligentes
     features_vector = {}
@@ -275,10 +323,10 @@ def prepare_features_complete(client_data):
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    """Health check avec informations fichiers optimisés"""
+    """Health check avec informations vraies données"""
     return jsonify({
         'status': 'healthy',
-        'version': 'Railway v4.0 - FICHIERS OPTIMISÉS',
+        'version': 'Railway v5.0 - VRAIES DONNÉES POPULATION',
         'platform': 'Railway Cloud',
         'model_loaded': model is not None,
         'model_type': 'LightGBM Optimisé',
@@ -287,8 +335,10 @@ def health_check():
         'features_source': 'final_features_list.json',
         'threshold_source': 'optimal_threshold_optimized.pkl',
         'hyperparams_source': 'optimized_hyperparameters.json',
+        'population_source': 'population_distribution.json',
+        'real_population_data': population_distributions is not None,
+        'population_variables_count': len(population_distributions) if population_distributions else 0,
         'hyperparams_loaded': hyperparameters is not None,
-        'population_available': population_stats is not None,
         'shap_available': explainer is not None,
         'threshold': float(threshold) if threshold else None,
         'hyperparameters_count': len(hyperparameters) if hyperparameters else 0,
@@ -396,8 +446,9 @@ def predict_dashboard():
                     'impact': 'neutral'
                 })
         
-        # Comparaisons population (INCHANGÉES)
+        # NOUVEAU: Comparaisons avec vraies données population
         comparisons = {}
+        population_stats = generate_population_stats_from_real_data()
         comparison_vars = ['EXT_SOURCE_2', 'EXT_SOURCE_3', 'EXT_SOURCE_1', 'PAYMENT_RATE', 'AMT_ANNUITY']
         
         for feature in comparison_vars:
@@ -421,7 +472,8 @@ def predict_dashboard():
                     'client_value': client_val,
                     'population_mean': pop_stats['mean'],
                     'percentile': round(percentile, 1),
-                    'category': category
+                    'category': category,
+                    'population_size': len(pop_values)
                 }
         
         processing_time = time.time() - start_time
@@ -441,7 +493,7 @@ def predict_dashboard():
                 'feature_count': len(DASHBOARD_FEATURES)
             },
             'metadata': {
-                'api_version': 'Railway v4.0 - FICHIERS OPTIMISÉS',
+                'api_version': 'Railway v5.0 - VRAIES DONNÉES POPULATION',
                 'timestamp': datetime.now().isoformat(),
                 'model_type': 'LightGBM Optimisé',
                 'model_features_used': len(feature_names),
@@ -450,6 +502,8 @@ def predict_dashboard():
                 'shap_computed': explainer is not None,
                 'features_source': 'final_features_list.json',
                 'threshold_source': 'optimal_threshold_optimized.pkl',
+                'population_source': 'population_distribution.json',
+                'real_population_data': population_distributions is not None,
                 'hyperparams_available': hyperparameters is not None
             }
         }
@@ -466,7 +520,9 @@ def predict_dashboard():
 
 @app.route('/population_stats', methods=['GET'])
 def get_population_stats():
-    """Statistiques population pour dashboard (INCHANGÉ)"""
+    """NOUVEAU: Statistiques population avec vraies données"""
+    population_stats = generate_population_stats_from_real_data()
+    
     key_vars = ['EXT_SOURCE_2', 'EXT_SOURCE_3', 'EXT_SOURCE_1', 
                'DAYS_EMPLOYED', 'INSTAL_DPD_MEAN', 'PAYMENT_RATE',
                'AMT_ANNUITY', 'INSTAL_AMT_PAYMENT_SUM']
@@ -486,16 +542,62 @@ def get_population_stats():
     return jsonify({
         'graph_data': graph_data,
         'variables_available': list(graph_data.keys()),
-        'population_size': 1000,
+        'population_size': len(population_stats[key_vars[0]]['values']) if key_vars[0] in population_stats else 0,
+        'data_source': 'train_preprocessed.csv',
+        'real_data': population_distributions is not None,
         'status': 'success'
+    })
+
+@app.route('/population/<variable>', methods=['GET'])
+def get_population_distribution(variable):
+    """NOUVEAU: Distribution d'une variable spécifique pour graphique unique"""
+    if population_distributions is None:
+        return jsonify({
+            'error': 'Distributions population non disponibles',
+            'fallback': 'Utilisation données simulées'
+        }), 404
+    
+    if variable not in population_distributions:
+        return jsonify({
+            'error': f'Variable {variable} non trouvée',
+            'available_variables': list(population_distributions.keys())
+        }), 404
+    
+    values = population_distributions[variable]
+    
+    if not isinstance(values, list) or len(values) == 0:
+        return jsonify({
+            'error': f'Données invalides pour {variable}'
+        }), 500
+    
+    # Calculs stats en temps réel
+    np_values = np.array(values)
+    
+    return jsonify({
+        'variable': variable,
+        'values': values,
+        'count': len(values),
+        'stats': {
+            'mean': float(np.mean(np_values)),
+            'median': float(np.median(np_values)),
+            'std': float(np.std(np_values)),
+            'min': float(np.min(np_values)),
+            'max': float(np.max(np_values)),
+            'q1': float(np.quantile(np_values, 0.25)),
+            'q3': float(np.quantile(np_values, 0.75))
+        },
+        'data_source': 'train_preprocessed.csv',
+        'real_data': True
     })
 
 @app.route('/bivariate_analysis', methods=['POST'])
 def bivariate_analysis():
-    """Analyse bi-variée (INCHANGÉE)"""
+    """Analyse bi-variée avec vraies données"""
     data = request.get_json()
     var1 = data.get('variable1')
     var2 = data.get('variable2')
+    
+    population_stats = generate_population_stats_from_real_data()
     
     if var1 not in population_stats or var2 not in population_stats:
         return jsonify({
@@ -503,8 +605,15 @@ def bivariate_analysis():
             'available_variables': list(population_stats.keys())
         }), 404
     
-    x_data = population_stats[var1]['values'][:200]
-    y_data = population_stats[var2]['values'][:200]
+    # Utiliser échantillon pour performance (2000 points max)
+    x_data = population_stats[var1]['values'][:2000]
+    y_data = population_stats[var2]['values'][:2000]
+    
+    # Assurer même longueur
+    min_len = min(len(x_data), len(y_data))
+    x_data = x_data[:min_len]
+    y_data = y_data[:min_len]
+    
     correlation = np.corrcoef(x_data, y_data)[0, 1]
     
     return jsonify({
@@ -514,12 +623,13 @@ def bivariate_analysis():
         'correlation': float(correlation),
         'sample_size': len(x_data),
         'stats_var1': population_stats[var1],
-        'stats_var2': population_stats[var2]
+        'stats_var2': population_stats[var2],
+        'real_data': population_distributions is not None
     })
 
 @app.route('/model_info', methods=['GET'])
 def model_info():
-    """Nouvelles informations sur le modèle optimisé"""
+    """Informations sur le modèle optimisé avec vraies données"""
     return jsonify({
         'model_type': 'LightGBM Optimisé',
         'features_count': len(feature_names) if feature_names else 0,
@@ -528,8 +638,11 @@ def model_info():
         'threshold_source': 'optimal_threshold_optimized.pkl',
         'hyperparameters': hyperparameters,
         'hyperparams_source': 'optimized_hyperparameters.json',
+        'population_source': 'population_distribution.json',
+        'real_population_data': population_distributions is not None,
+        'population_variables': len(population_distributions) if population_distributions else 0,
         'dashboard_variables': DASHBOARD_FEATURES,
-        'api_version': 'Railway v4.0 - FICHIERS OPTIMISÉS'
+        'api_version': 'Railway v5.0 - VRAIES DONNÉES POPULATION'
     })
 
 # CORS (INCHANGÉ)
@@ -540,7 +653,7 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
 
-# Initialisation Railway avec fichiers optimisés
+# Initialisation Railway avec vraies données population
 try:
     init_railway_model()
 except Exception as e:

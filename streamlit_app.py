@@ -1,8 +1,8 @@
 """
 Dashboard Credit Scoring Production - Streamlit Cloud
-Version: Production v1.0
-Plateforme: Streamlit Cloud + Railway API
-Fonctionnalités: Interface chargés relation client optimisée
+Version: Production v2.0 - SIMPLE
+Plateforme: Streamlit Cloud + Railway API v5.0
+Fonctionnalités: Interface chargés relation client + graphique simple population
 """
 
 import streamlit as st
@@ -126,7 +126,19 @@ FEATURE_EXPLANATIONS = {
     "PAYMENT_RATE": "Ratio d'endettement par rapport aux revenus",
     "AMT_ANNUITY": "Montant mensuel que le client devra payer",
     "INSTAL_DPD_MEAN": "Retards moyens sur paiements antérieurs (jours)",
+    "AMT_ANNUITY": "Montant de l'annuité mensuelle",
+    "INSTAL_AMT_PAYMENT_SUM": "Somme historique des paiements",
+    "CODE_GENDER": "Genre du client",
+    "NAME_EDUCATION_TYPE_Higher_education": "Niveau d'éducation supérieure"
 }
+
+# Les 10 variables dashboard
+DASHBOARD_FEATURES = [
+    'EXT_SOURCE_2', 'EXT_SOURCE_3', 'EXT_SOURCE_1',
+    'DAYS_EMPLOYED', 'CODE_GENDER', 'INSTAL_DPD_MEAN',
+    'PAYMENT_RATE', 'NAME_EDUCATION_TYPE_Higher_education',
+    'AMT_ANNUITY', 'INSTAL_AMT_PAYMENT_SUM'
+]
 
 # Session state optimisé
 if 'client_analyzed' not in st.session_state:
@@ -172,8 +184,20 @@ def call_prediction_api(client_data):
         return None, f"Erreur connexion: {str(e)}"
 
 @st.cache_data(ttl=600)  # Cache 10 minutes
+def get_population_distribution(variable):
+    """Récupérer distribution d'une variable spécifique"""
+    try:
+        response = requests.get(f"{API_URL}/population/{variable}", timeout=15)
+        if response.status_code == 200:
+            return response.json()
+        return None
+    except Exception as e:
+        st.warning(f"Distribution {variable} indisponible: {str(e)}")
+        return None
+
+@st.cache_data(ttl=600)  # Cache 10 minutes
 def get_population_data():
-    """Récupérer données population avec cache"""
+    """Récupérer données population avec cache (pour bi-variée)"""
     try:
         response = requests.get(f"{API_URL}/population_stats", timeout=15)
         if response.status_code == 200:
@@ -533,75 +557,89 @@ def display_client_profile(client_data):
         payment_sum = client_data.get('INSTAL_AMT_PAYMENT_SUM', 0)
         st.metric("Hist. paiements", f"{payment_sum:,.0f} €")
 
-def display_population_comparison(client_data, population_data):
-    """Comparaisons avec la population"""
-    if not population_data:
-        st.warning("Données de population non disponibles")
+def create_simple_population_plot(distribution_data, client_value, variable_name):
+    """Créer graphique simple : points population + étoile client"""
+    
+    values = distribution_data.get('values', [])
+    
+    if not values:
+        st.error(f"Aucune donnée disponible pour {variable_name}")
         return
+    
+    # Graphique scatter plot simple
+    fig = go.Figure()
+    
+    # Points population (scatter horizontal)
+    fig.add_trace(go.Scatter(
+        x=values,
+        y=[1] * len(values),  # Tous sur la même ligne horizontale
+        mode='markers',
+        name='Population',
+        marker=dict(
+            size=3,
+            opacity=0.4,
+            color='lightblue',
+            line=dict(width=0)
+        ),
+        showlegend=False
+    ))
+    
+    # Étoile rouge pour le client
+    fig.add_trace(go.Scatter(
+        x=[client_value],
+        y=[1],
+        mode='markers',
+        name='Client',
+        marker=dict(
+            size=25,
+            symbol='star',
+            color='red',
+            line=dict(width=2, color='darkred')
+        ),
+        showlegend=False
+    ))
+    
+    # Configuration du graphique
+    fig.update_layout(
+        title=f"{FEATURE_TRANSLATIONS.get(variable_name, variable_name)}",
+        xaxis_title=f"{FEATURE_TRANSLATIONS.get(variable_name, variable_name)}",
+        yaxis=dict(
+            showticklabels=False,
+            showgrid=False,
+            zeroline=False,
+            range=[0.5, 1.5]
+        ),
+        height=400,
+        showlegend=False
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+
+def display_simple_population_comparison(client_data):
+    """Interface simple : dropdown + graphique"""
     
     st.markdown("#### 📊 Position vs Population")
     
-    graph_data = population_data.get('graph_data', {})
-    key_vars = ['EXT_SOURCE_2', 'EXT_SOURCE_3', 'PAYMENT_RATE']
+    # Sélecteur de variable (les 10 variables)
+    selected_variable = st.selectbox(
+        "Variable à analyser :",
+        DASHBOARD_FEATURES,
+        format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x)
+    )
     
-    for i in range(0, len(key_vars), 2):
-        col1, col2 = st.columns(2)
+    # Récupérer les données de distribution
+    distribution_data = get_population_distribution(selected_variable)
+    
+    if distribution_data:
+        client_value = client_data.get(selected_variable)
         
-        for j, col in enumerate([col1, col2]):
-            if i + j < len(key_vars):
-                var = key_vars[i + j]
-                
-                with col:
-                    if var in graph_data and var in client_data:
-                        data = graph_data[var]
-                        values = data['values']
-                        stats = data['stats']
-                        client_value = client_data[var]
-                        
-                        # Histogramme
-                        fig = go.Figure()
-                        
-                        fig.add_trace(go.Histogram(
-                            x=values,
-                            nbinsx=20,
-                            name='Population',
-                            opacity=0.7,
-                            marker_color='lightblue'
-                        ))
-                        
-                        # Ligne client
-                        fig.add_vline(
-                            x=client_value,
-                            line_dash="solid",
-                            line_color="red",
-                            line_width=3,
-                            annotation_text="Client"
-                        )
-                        
-                        # Ligne moyenne
-                        fig.add_vline(
-                            x=stats['mean'],
-                            line_dash="dash",
-                            line_color="blue",
-                            annotation_text="Moyenne"
-                        )
-                        
-                        fig.update_layout(
-                            title=FEATURE_TRANSLATIONS.get(var, var),
-                            height=300,
-                            showlegend=False
-                        )
-                        
-                        st.plotly_chart(fig, use_container_width=True)
-                        
-                        # Indicateur position
-                        diff_pct = ((client_value - stats['mean']) / stats['mean']) * 100
-                        if abs(diff_pct) < 10:
-                            st.success(f"🟢 Proche moyenne ({diff_pct:+.1f}%)")
-                        elif diff_pct > 0:
-                            st.info(f"🔵 Au-dessus moyenne ({diff_pct:+.1f}%)")
-                        else:
-                            st.warning(f"🟡 En-dessous moyenne ({diff_pct:+.1f}%)")
+        if client_value is not None:
+            # Afficher le graphique simple
+            create_simple_population_plot(distribution_data, client_value, selected_variable)
+        else:
+            st.error(f"Valeur client manquante pour {selected_variable}")
+    else:
+        st.error(f"Impossible de charger les données pour {selected_variable}")
 
 # Interface principale
 
@@ -684,11 +722,8 @@ else:
     with tab2:
         st.markdown("### 📊 Comparaisons Population")
         
-        population_data = get_population_data()
-        if population_data:
-            display_population_comparison(st.session_state.client_data, population_data)
-        else:
-            st.warning("Données de population temporairement indisponibles")
+        # Interface simple : dropdown + graphique
+        display_simple_population_comparison(st.session_state.client_data)
     
     with tab3:
         st.markdown("### 🔧 Analyse Bi-variée")
@@ -771,7 +806,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown("**🏦 Prêt à dépenser**")
     st.markdown("Dashboard Credit Scoring")
-    st.markdown("Version Production v1.0")
+    st.markdown("Version Production v2.0")
 
 with col2:
     st.markdown("**✅ Fonctionnalités**")
