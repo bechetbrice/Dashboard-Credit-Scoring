@@ -38,10 +38,10 @@ PLOTLY_CONFIG = {
     }
 }
 
-# CSS WCAG pour production
+# CSS WCAG pour production + Améliorations visuelles
 st.markdown("""
 <style>
-/* Styles WCAG conformes */
+/* Styles WCAG conformes + Améliorations visuelles */
 .main-header {
     background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     color: #ffffff;
@@ -51,35 +51,100 @@ st.markdown("""
     font-size: 2rem;
     font-weight: bold;
     text-align: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.main-header:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+}
+
+/* NOUVEAUX BOUTONS UNIFORMISÉS */
+.stButton > button {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 0.75rem 1.5rem !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3) !important;
+    transition: all 0.3s ease !important;
+    text-transform: none !important;
+    letter-spacing: 0.025em !important;
+    min-height: 3rem !important;
+    width: 100% !important;
+}
+
+.stButton > button:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4) !important;
+}
+
+.stButton > button:active {
+    transform: translateY(0px) !important;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* BOUTON PRIMAIRE SPÉCIAL */
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3) !important;
+}
+
+.stButton > button[kind="primary"]:hover {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
+    box-shadow: 0 8px 25px rgba(5, 150, 105, 0.4) !important;
+}
+
+/* BOUTON SECONDAIRE (Modifier) */
+.stButton > button[kind="secondary"] {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3) !important;
+}
+
+.stButton > button[kind="secondary"]:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4) !important;
 }
 
 .metric-card {
-    background-color: #f8fafc;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     border: 2px solid #e2e8f0;
     padding: 1.5rem;
     border-radius: 1rem;
     margin: 1rem 0;
     font-size: 1.1rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .success-card {
-    background-color: #dcfce7;
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
     border: 3px solid #16a34a;
     color: #15803d;
+    box-shadow: 0 4px 20px rgba(22, 163, 74, 0.2);
 }
 
 .warning-card {
-    background-color: #fef3c7;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
     border: 3px solid #d97706;
     color: #92400e;
+    box-shadow: 0 4px 20px rgba(217, 119, 6, 0.2);
 }
 
 .error-card {
-    background-color: #fee2e2;
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
     border: 3px solid #dc2626;
     color: #991b1b;
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.2);
 }
 
 /* WCAG Accessibilité */
@@ -87,23 +152,25 @@ st.markdown("""
 .refused::before { content: "❌ "; font-weight: bold; }
 
 .alert-info {
-    background: #eff6ff;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
     border: 2px solid #3b82f6;
     color: #1d4ed8;
     padding: 1rem;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     margin: 1rem 0;
     font-weight: 500;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
 }
 
 .alert-success {
-    background: #dcfce7;
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
     border: 2px solid #16a34a;
     color: #15803d;
     padding: 1rem;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     margin: 1rem 0;
     font-weight: 500;
+    box-shadow: 0 4px 15px rgba(22, 163, 74, 0.1);
 }
 
 /* Responsive design */
@@ -112,6 +179,27 @@ st.markdown("""
         font-size: 1.5rem;
         padding: 1rem;
     }
+}
+
+/* NOUVEAUX STYLES POUR BOUTON COMPARAISONS */
+.comparison-button {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 0.75rem 1.5rem !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3) !important;
+    transition: all 0.3s ease !important;
+    min-height: 3rem !important;
+    width: 100% !important;
+}
+
+.comparison-button:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -161,6 +249,8 @@ if 'client_data' not in st.session_state:
     st.session_state.client_data = None
 if 'prediction_result' not in st.session_state:
     st.session_state.prediction_result = None
+if 'refresh_comparison' not in st.session_state:
+    st.session_state.refresh_comparison = False
 
 # Fonctions API
 
@@ -363,7 +453,7 @@ def create_client_form():
 # Affichage des résultats
 
 def display_prediction_result(result):
-    """Afficher résultat de prédiction avec accessibilité WCAG"""
+    """Afficher résultat de prédiction avec jauge modernisée"""
     prediction = result.get('prediction', {})
     probability = prediction.get('probability', 0)
     decision = prediction.get('decision', 'UNKNOWN')
@@ -388,33 +478,54 @@ def display_prediction_result(result):
         </div>
         """, unsafe_allow_html=True)
     
-    # Gauge visuelle
+    # JAUGE MODERNISÉE
     fig_gauge = go.Figure(go.Indicator(
-        mode="gauge",
+        mode="gauge+number",
         value=probability * 100,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "Niveau de Risque (%)", 'font': {'size': 20}},
+        title={
+            'text': "📊 Niveau de Risque (%)", 
+            'font': {'size': 24, 'color': '#1e40af', 'family': 'Arial Black'}
+        },
+        number={
+            'font': {'size': 48, 'color': '#1e40af', 'family': 'Arial Black'},
+            'suffix': '%'
+        },
         gauge={
-            'axis': {'range': [None, 100], 'tickwidth': 3, 'tickcolor': "black"},
-            'bar': {'color': "darkblue", 'thickness': 0.3},
+            'axis': {
+                'range': [None, 100], 
+                'tickwidth': 2, 
+                'tickcolor': "#1e40af",
+                'tickfont': {'size': 14, 'color': '#1e40af'}
+            },
+            'bar': {
+                'color': "#3b82f6", 
+                'thickness': 0.25,
+                'line': {'color': "#1e40af", 'width': 2}
+            },
             'bgcolor': "white",
             'borderwidth': 3,
-            'bordercolor': "gray",
+            'bordercolor': "#e5e7eb",
             'steps': [
-                {'range': [0, 10], 'color': 'lightgreen'},
-                {'range': [10, 100], 'color': 'lightcoral'}
+                {'range': [0, 10], 'color': '#dcfce7', 'name': 'Faible'},
+                {'range': [10, 25], 'color': '#fef3c7', 'name': 'Modéré'},
+                {'range': [25, 50], 'color': '#fed7aa', 'name': 'Élevé'},
+                {'range': [50, 100], 'color': '#fee2e2', 'name': 'Très élevé'}
             ],
             'threshold': {
-                'line': {'color': "red", 'width': 5},
-                'thickness': 0.8,
-                'value': 10  # Seuil simplifié à 10%
+                'line': {'color': "#dc2626", 'width': 6},
+                'thickness': 0.9,
+                'value': 10
             }
         }
     ))
     
     fig_gauge.update_layout(
-        height=400,
-        font={'color': "black", 'family': "Arial", 'size': 16}
+        height=450,
+        font={'color': "#1e40af", 'family': "Arial", 'size': 16},
+        margin=dict(l=50, r=50, t=80, b=50),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
     )
     
     st.plotly_chart(fig_gauge, use_container_width=True, config=PLOTLY_CONFIG)
@@ -723,14 +834,24 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
         """)
 
 def display_simple_population_comparison(client_data):
-    """Interface : dropdown + graphique"""
+    """Interface : dropdown + bouton NOUVEAU"""
        
-    # Sélecteur de variable (les 10 variables)
-    selected_variable = st.selectbox(
-        "Variable à analyser :",
-        DASHBOARD_FEATURES,
-        format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x)
-    )
+    # Layout avec bouton à droite du selecteur
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        # Sélecteur de variable (les 10 variables)
+        selected_variable = st.selectbox(
+            "Variable à analyser :",
+            DASHBOARD_FEATURES,
+            format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x)
+        )
+    
+    with col2:
+        # NOUVEAU BOUTON avec style spécial
+        if st.button("📊 Actualiser", key="refresh_comparison", help="Actualiser le graphique"):
+            st.session_state.refresh_comparison = not st.session_state.refresh_comparison
+            st.rerun()
     
     # Récupérer les données de distribution
     distribution_data = get_population_distribution(selected_variable)
@@ -761,6 +882,9 @@ if not api_ok:
 
 # Sidebar
 with st.sidebar:
+    st.markdown("**🏦 Dashboard Credit Scoring<br>Prêt à dépenser**")
+    st.markdown("---")
+
     st.markdown("### 📋 Navigation")
     
     if st.button("🆕 Nouveau client", use_container_width=True):
@@ -804,7 +928,7 @@ else:
     with tab1:
         st.markdown("### 🎯 Résultat de l'analyse")
         
-        # Bouton pour modifier/simuler
+        # Bouton pour modifier
         col1, col2 = st.columns([3, 1])
         with col2:
             if st.button("🔧 Modifier", use_container_width=True):
@@ -827,7 +951,7 @@ else:
     with tab2:
         st.markdown("### 📊 Comparaisons avec la base clients")
         
-        # Interface simple : dropdown + graphique
+        # Interface avec bouton actualiser
         display_simple_population_comparison(st.session_state.client_data)
     
     with tab3:
