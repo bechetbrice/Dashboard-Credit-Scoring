@@ -40,7 +40,7 @@ def init_production_model():
     global model, threshold, feature_names, population_stats, explainer
     
     # Chargement modèle LightGBM OBLIGATOIRE
-    model_path = 'lightgbm_final_model_optimized.pkl'
+    model_path = 'models/lightgbm_final_model_optimized.pkl'
     if not os.path.exists(model_path):
         logger.error(f"❌ ERREUR CRITIQUE: Modèle non trouvé: {model_path}")
         raise FileNotFoundError(f"Modèle obligatoire manquant: {model_path}")
