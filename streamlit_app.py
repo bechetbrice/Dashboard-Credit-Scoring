@@ -234,7 +234,11 @@ def create_client_form():
         - L'**ancienneté emploi** est en années positives
         - Le **ratio d'endettement** = charges / revenus (max 100%)
         - Les **retards moyens** = nombre moyen de jours de retard sur les paiements précédents
+        - Vous pouvez **modifier** les valeurs pour des **simulations**
         """)
+    
+    # Valeurs par défaut (ou valeurs précédentes si modification)
+    default_values = st.session_state.client_data if st.session_state.client_data else {}
     
     col1, col2 = st.columns(2)
     
@@ -243,58 +247,86 @@ def create_client_form():
         
         ext_source_2 = st.slider(
             "Score Externe 2*", 
-            0.0, 1.0, 0.6, 0.01,
+            0.0, 1.0, 
+            float(default_values.get('EXT_SOURCE_2', 0.6)), 
+            0.01,
             help=FEATURE_EXPLANATIONS["EXT_SOURCE_2"]
         )
         
         ext_source_3 = st.slider(
             "Score Externe 3*", 
-            0.0, 1.0, 0.5, 0.01,
+            0.0, 1.0, 
+            float(default_values.get('EXT_SOURCE_3', 0.5)), 
+            0.01,
             help=FEATURE_EXPLANATIONS["EXT_SOURCE_3"]
         )
         
         ext_source_1 = st.slider(
             "Score Externe 1", 
-            0.0, 1.0, 0.4, 0.01,
+            0.0, 1.0, 
+            float(default_values.get('EXT_SOURCE_1', 0.4)), 
+            0.01,
             help=FEATURE_EXPLANATIONS["EXT_SOURCE_1"]
         )
         
+        # Conversion jours en années pour l'affichage
+        default_employment = abs(default_values.get('DAYS_EMPLOYED', -1825)) / 365.25
         employment_years = st.number_input(
             "Ancienneté emploi (années)", 
-            0.0, 40.0, 5.0, 0.01,
+            0.0, 40.0, 
+            float(default_employment), 
+            0.01,
             help="Années dans l'emploi actuel"
         )
         
         instal_dpd_mean = st.slider(
             "Retards moyens (jours)", 
-            0.0, 30.0, 0.5, 0.1,
+            0.0, 30.0, 
+            float(default_values.get('INSTAL_DPD_MEAN', 0.5)), 
+            0.1,
             help="Nombre moyen de jours de retard sur les paiements antérieurs"
         )
         
     with col2:
         st.markdown("**💼 Informations Complémentaires**")
         
-        gender = st.selectbox("Genre", ["Femme", "Homme"])
+        # Conversion M/F pour l'affichage
+        default_gender = "Homme" if default_values.get('CODE_GENDER') == 'M' else "Femme"
+        gender = st.selectbox(
+            "Genre", 
+            ["Femme", "Homme"],
+            index=0 if default_gender == "Femme" else 1
+        )
         
         payment_rate = st.slider(
             "Ratio d'endettement", 
-            0.0, 1.0, 0.15, 0.01,
+            0.0, 1.0, 
+            float(default_values.get('PAYMENT_RATE', 0.15)), 
+            0.01,
             help=FEATURE_EXPLANATIONS["PAYMENT_RATE"]
         )
         
+        # Conversion 0/1 pour l'affichage
+        default_education = "Oui" if default_values.get('NAME_EDUCATION_TYPE_Higher_education', 0) == 1 else "Non"
         education = st.selectbox(
-            "Éducation supérieure", ["Non", "Oui"]
+            "Éducation supérieure", 
+            ["Non", "Oui"],
+            index=0 if default_education == "Non" else 1
         )
         
         annuity = st.number_input(
             "Annuité mensuelle (€)", 
-            5000, 100000, 18000, 1000,
+            5000, 100000, 
+            int(default_values.get('AMT_ANNUITY', 18000)), 
+            1000,
             help=FEATURE_EXPLANATIONS["AMT_ANNUITY"]
         )
         
         payment_sum = st.number_input(
             "Historique paiements (€)", 
-            10000, 1000000, 120000, 10000,
+            10000, 1000000, 
+            int(default_values.get('INSTAL_AMT_PAYMENT_SUM', 120000)), 
+            10000,
             help="Somme des paiements antérieurs"
         )
     
@@ -697,7 +729,7 @@ if not api_ok:
 with st.sidebar:
     st.markdown("### 📋 Navigation")
     
-    if st.button("🔄 Nouveau Client", use_container_width=True):
+    if st.button("🆕 Nouveau Dossier Client", use_container_width=True):
         st.session_state.client_analyzed = False
         st.session_state.client_data = None
         st.session_state.prediction_result = None
@@ -737,6 +769,13 @@ else:
     
     with tab1:
         st.markdown("### 🎯 Résultat de l'Analyse")
+        
+        # Bouton pour modifier/simuler
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            if st.button("🔧 Modifier / Simuler", use_container_width=True):
+                st.session_state.client_analyzed = False
+                st.rerun()
         
         # Profil client
         display_client_profile(st.session_state.client_data)
