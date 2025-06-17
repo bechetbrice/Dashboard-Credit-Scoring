@@ -566,28 +566,47 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
         st.error(f"Aucune donnée disponible pour {variable_name}")
         return
     
+    # Conversion spéciale pour variables catégorielles
+    if variable_name == 'CODE_GENDER':
+        # Convertir M/F en 1/0 pour le graphique
+        if client_value == 'M':
+            client_value_numeric = 1
+            gender_labels = {0: 'Femme', 1: 'Homme'}
+        else:
+            client_value_numeric = 0
+            gender_labels = {0: 'Femme', 1: 'Homme'}
+    elif variable_name == 'NAME_EDUCATION_TYPE_Higher_education':
+        # client_value est déjà 0 ou 1
+        client_value_numeric = client_value
+        education_labels = {0: 'Non', 1: 'Oui'}
+    else:
+        client_value_numeric = client_value
+    
     # Histogramme simple
     fig = go.Figure()
     
     # Histogramme population
     fig.add_trace(go.Histogram(
         x=values,
-        nbinsx=30,
+        nbinsx=30 if variable_name not in ['CODE_GENDER', 'NAME_EDUCATION_TYPE_Higher_education'] else 10,
         opacity=0.7,
         marker_color='lightblue',
         name='Population',
         showlegend=False
     ))
     
-    # Ligne verticale rouge pour le client
-    fig.add_vline(
-        x=client_value,
-        line_dash="solid",
-        line_color="red",
-        line_width=4,
-        annotation_text="⭐ Client",
-        annotation_position="top"
-    )
+    # Ligne verticale rouge pour le client (seulement si valeur numérique)
+    try:
+        fig.add_vline(
+            x=client_value_numeric,
+            line_dash="solid",
+            line_color="red",
+            line_width=4,
+            annotation_text="⭐ Client",
+            annotation_position="top"
+        )
+    except (TypeError, ValueError):
+        st.warning(f"Impossible d'afficher la position client pour {variable_name}")
     
     # Configuration du graphique
     fig.update_layout(
@@ -597,6 +616,20 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
         height=400,
         showlegend=False
     )
+    
+    # Labels spéciaux pour variables catégorielles
+    if variable_name == 'CODE_GENDER':
+        fig.update_xaxis(
+            tickmode='array',
+            tickvals=[0, 1],
+            ticktext=['Femme', 'Homme']
+        )
+    elif variable_name == 'NAME_EDUCATION_TYPE_Higher_education':
+        fig.update_xaxis(
+            tickmode='array',
+            tickvals=[0, 1],
+            ticktext=['Non', 'Oui']
+        )
     
     st.plotly_chart(fig, use_container_width=True)
 
@@ -625,6 +658,16 @@ def display_simple_population_comparison(client_data):
             st.error(f"Valeur client manquante pour {selected_variable}")
     else:
         st.error(f"Impossible de charger les données pour {selected_variable}")
+        
+        # Info pour debugging
+        st.info("""
+        **Possible causes :**
+        - Variable non présente dans population_distribution.json
+        - Problème de connexion API
+        - Variable avec trop de valeurs manquantes
+        
+        **Variables généralement disponibles :** EXT_SOURCE_2, EXT_SOURCE_3, PAYMENT_RATE, AMT_ANNUITY
+        """)
 
 # Interface principale
 
