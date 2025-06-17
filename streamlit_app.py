@@ -760,76 +760,108 @@ else:
     with tab3:
         st.markdown("### 🔧 Analyse Bi-variée")
         
-        population_data = get_population_data()
-        if population_data:
-            available_vars = population_data.get('variables_available', [])
+        # Récupérer les variables disponibles depuis l'API réelle
+        st.info("Sélectionnez deux variables pour analyser leur relation avec les vraies données population")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            var1 = st.selectbox(
+                "Variable 1",
+                DASHBOARD_FEATURES,
+                format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x)
+            )
+        
+        with col2:
+            var2 = st.selectbox(
+                "Variable 2", 
+                DASHBOARD_FEATURES,
+                index=1,
+                format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x)
+            )
+        
+        if st.button("📈 Analyser Relation", use_container_width=True):
+            with st.spinner("Analyse en cours avec vraies données..."):
+                # Récupérer les vraies distributions pour les 2 variables
+                dist1 = get_population_distribution(var1)
+                dist2 = get_population_distribution(var2)
             
-            if len(available_vars) >= 2:
-                col1, col2 = st.columns(2)
+            if dist1 and dist2:
+                values1 = dist1.get('values', [])
+                values2 = dist2.get('values', [])
                 
-                with col1:
-                    var1 = st.selectbox(
-                        "Variable 1",
-                        available_vars,
-                        format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x)
-                    )
-                
-                with col2:
-                    var2 = st.selectbox(
-                        "Variable 2", 
-                        available_vars,
-                        index=1,
-                        format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x)
-                    )
-                
-                if st.button("📈 Analyser Relation", use_container_width=True):
-                    with st.spinner("Analyse en cours..."):
-                        bivariate_data = get_bivariate_data(var1, var2)
+                if values1 and values2:
+                    # Conversion spéciale pour variables catégorielles
+                    if var1 == 'NAME_EDUCATION_TYPE_Higher_education':
+                        values1 = [1 if v else 0 for v in values1]
+                    if var2 == 'NAME_EDUCATION_TYPE_Higher_education':
+                        values2 = [1 if v else 0 for v in values2]
                     
-                    if bivariate_data:
-                        x_data = bivariate_data['data_points']['x']
-                        y_data = bivariate_data['data_points']['y']
-                        correlation = bivariate_data['correlation']
-                        
-                        # Graphique de corrélation
-                        fig = px.scatter(
-                            x=x_data,
-                            y=y_data,
-                            title=f"Relation entre {FEATURE_TRANSLATIONS.get(var1, var1)} et {FEATURE_TRANSLATIONS.get(var2, var2)}",
-                            labels={
-                                'x': FEATURE_TRANSLATIONS.get(var1, var1),
-                                'y': FEATURE_TRANSLATIONS.get(var2, var2)
-                            },
-                            opacity=0.6
-                        )
-                        
-                        fig.update_layout(height=500)
-                        st.plotly_chart(fig, use_container_width=True)
-                        
-                        # Métrique de corrélation
-                        col1, col2, col3 = st.columns(3)
-                        
-                        with col1:
-                            st.metric("Corrélation", f"{correlation:.3f}")
-                        
-                        with col2:
-                            if abs(correlation) > 0.7:
-                                strength = "Forte"
-                            elif abs(correlation) > 0.3:
-                                strength = "Modérée"
-                            else:
-                                strength = "Faible"
-                            st.metric("Force", strength)
-                        
-                        with col3:
-                            direction = "Positive" if correlation > 0 else "Négative"
-                            st.metric("Direction", direction)
-                    else:
-                        st.error("Erreur lors de l'analyse bi-variée")
+                    # Assurer même longueur (prendre le minimum)
+                    min_len = min(len(values1), len(values2))
+                    x_data = values1[:min_len]
+                    y_data = values2[:min_len]
+                    
+                    # Échantillonnage pour performance (max 2000 points)
+                    if min_len > 2000:
+                        import random
+                        indices = random.sample(range(min_len), 2000)
+                        x_data = [x_data[i] for i in indices]
+                        y_data = [y_data[i] for i in indices]
+                    
+                    # Calcul corrélation
+                    correlation = np.corrcoef(x_data, y_data)[0, 1]
+                    
+                    # Graphique de corrélation
+                    fig = px.scatter(
+                        x=x_data,
+                        y=y_data,
+                        title=f"Relation entre {FEATURE_TRANSLATIONS.get(var1, var1)} et {FEATURE_TRANSLATIONS.get(var2, var2)}",
+                        labels={
+                            'x': FEATURE_TRANSLATIONS.get(var1, var1),
+                            'y': FEATURE_TRANSLATIONS.get(var2, var2)
+                        },
+                        opacity=0.6
+                    )
+                    
+                    fig.update_layout(height=500)
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Métrique de corrélation
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        st.metric("Corrélation", f"{correlation:.3f}")
+                    
+                    with col2:
+                        if abs(correlation) > 0.7:
+                            strength = "Forte"
+                        elif abs(correlation) > 0.3:
+                            strength = "Modérée"
+                        else:
+                            strength = "Faible"
+                        st.metric("Force", strength)
+                    
+                    with col3:
+                        direction = "Positive" if correlation > 0 else "Négative"
+                        st.metric("Direction", direction)
+                    
+                    with col4:
+                        st.metric("Échantillon", f"{len(x_data):,} clients")
+                    
+                    # Info sur données réelles
+                    st.success("✅ Analyse basée sur vraies données train_preprocessed.csv")
+                    
+                else:
+                    st.error("Données insuffisantes pour une des variables")
             else:
-                st.warning("Pas assez de variables disponibles pour l'analyse")
-        else:
-            st.warning("Données indisponibles pour l'analyse bi-variée")
+                st.error("Impossible de charger les données pour l'analyse bi-variée")
+                missing_vars = []
+                if not dist1:
+                    missing_vars.append(var1)
+                if not dist2:
+                    missing_vars.append(var2)
+                st.warning(f"Variables indisponibles : {missing_vars}")
 
 # Footer
 st.markdown("---")
