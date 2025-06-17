@@ -218,7 +218,8 @@ def init_session_state():
         'client_data': None,
         'prediction_result': None,
         'form_submitted': False,
-        'last_analysis_time': None
+        'last_analysis_time': None,
+        'analysis_complete': False
     }
     
     for key, value in defaults.items():
@@ -875,14 +876,14 @@ with st.sidebar:
         st.error("❌ Déconnectée")
 
 # Interface principale AVEC PROTECTION ANTI-BOUCLE
-if not st.session_state.client_analyzed:
+if not st.session_state.analysis_complete:
     # Étape 1 : Saisie client
     st.markdown("### 📝 Nouveau client")
     
     client_data = create_client_form()
     
     # PROTECTION ANTI-DOUBLE-CLIC
-    if st.button("🎯 ANALYSER CE CLIENT", type="primary", use_container_width=True, disabled=st.session_state.form_submitted):
+    if st.button("🎯 ANALYSER CE CLIENT", type="primary", use_container_width=True):
         
         # Marquer comme soumis IMMÉDIATEMENT
         st.session_state.form_submitted = True
@@ -901,7 +902,8 @@ if not st.session_state.client_analyzed:
             st.success("✅ Client analysé avec succès !")
             
             # RERUN UNE SEULE FOIS
-            st.rerun()
+            st.session_state.analysis_complete = True
+            st.success("✅ Client analysé avec succès !")
         else:
             st.session_state.form_submitted = False  # Reset en cas d'erreur
             st.error(f"❌ Erreur d'analyse : {error}")
@@ -914,6 +916,11 @@ else:
         st.markdown("### 🎯 Résultat de l'analyse")
         
         # Bouton pour modifier SANS rerun automatique
+        with col2:
+            if st.button("🔧 Modifier", use_container_width=True):
+                st.session_state.client_analyzed = False
+                st.session_state.form_submitted = False
+                st.session_state.analysis_complete = False
         col1, col2 = st.columns([3, 1])
         with col2:
             if st.button("🔧 Modifier", use_container_width=True):
