@@ -207,8 +207,8 @@ def create_client_form():
         st.markdown("""
         **Pour les chargés de relation client :**
         - Les **scores externes** viennent des bureaux de crédit (0 = risqué, 1 = sûr)
-        - L'**ancienneté emploi** est en jours négatifs (-1825 = 5 ans)
-        - Le **ratio d'endettement** = charges / revenus
+        - L'**ancienneté emploi** est en années positives
+        - Le **ratio d'endettement** = charges / revenus (max 100%)
         - Les **retards moyens** = nombre moyen de jours de retard sur les paiements précédents
         """)
     
@@ -235,10 +235,10 @@ def create_client_form():
             help=FEATURE_EXPLANATIONS["EXT_SOURCE_1"]
         )
         
-        employment_days = st.number_input(
-            "Ancienneté emploi (jours)", 
-            -15000, 0, -1825, 100,
-            help="Jours dans l'emploi actuel (négatif)"
+        employment_years = st.number_input(
+            "Ancienneté emploi (années)", 
+            0.0, 40.0, 5.0, 0.01,
+            help="Années dans l'emploi actuel"
         )
         
         instal_dpd_mean = st.slider(
@@ -254,7 +254,7 @@ def create_client_form():
         
         payment_rate = st.slider(
             "Ratio d'endettement", 
-            0.0, 0.8, 0.15, 0.01,
+            0.0, 1.0, 0.15, 0.01,
             help=FEATURE_EXPLANATIONS["PAYMENT_RATE"]
         )
         
@@ -274,12 +274,14 @@ def create_client_form():
             help="Somme des paiements antérieurs"
         )
     
-    # Conversion pour API
+    # Conversion pour API (années vers jours négatifs)
+    employment_days = -int(employment_years * 365.25)
+    
     client_data = {
         "EXT_SOURCE_2": float(ext_source_2),
         "EXT_SOURCE_3": float(ext_source_3),
         "EXT_SOURCE_1": float(ext_source_1),
-        "DAYS_EMPLOYED": int(employment_days),
+        "DAYS_EMPLOYED": employment_days,
         "CODE_GENDER": "M" if gender == "Homme" else "F",
         "INSTAL_DPD_MEAN": float(instal_dpd_mean),
         "PAYMENT_RATE": float(payment_rate),
@@ -513,7 +515,7 @@ def display_client_profile(client_data):
     
     with col2:
         employment_years = abs(client_data.get('DAYS_EMPLOYED', 0)) / 365.25
-        st.metric("Ancienneté emploi", f"{employment_years:.1f} ans")
+        st.metric("Ancienneté emploi", f"{employment_years:.2f} ans")
         
         gender = "Homme" if client_data.get('CODE_GENDER') == 'M' else "Femme"
         st.metric("Genre", gender)
@@ -646,25 +648,18 @@ if not st.session_state.client_analyzed:
     
     client_data = create_client_form()
     
-    col1, col2 = st.columns([3, 1])
-    
-    with col1:
-        if st.button("🎯 ANALYSER CE CLIENT", type="primary", use_container_width=True):
-            with st.spinner("🔄 Analyse en cours..."):
-                result, error = call_prediction_api(client_data)
-            
-            if result:
-                st.session_state.client_data = client_data
-                st.session_state.prediction_result = result
-                st.session_state.client_analyzed = True
-                st.success("✅ Client analysé avec succès !")
-                st.rerun()
-            else:
-                st.error(f"❌ Erreur d'analyse : {error}")
-    
-    with col2:
-        st.markdown("**ℹ️ Aide**")
-        st.caption("Remplissez au minimum les scores externes 2 et 3")
+    if st.button("🎯 ANALYSER CE CLIENT", type="primary", use_container_width=True):
+        with st.spinner("🔄 Analyse en cours..."):
+            result, error = call_prediction_api(client_data)
+        
+        if result:
+            st.session_state.client_data = client_data
+            st.session_state.prediction_result = result
+            st.session_state.client_analyzed = True
+            st.success("✅ Client analysé avec succès !")
+            st.rerun()
+        else:
+            st.error(f"❌ Erreur d'analyse : {error}")
 
 else:
     # Étape 2 : Résultats et analyses
