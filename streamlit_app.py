@@ -1,6 +1,6 @@
 """
 Dashboard Credit Scoring Production - Streamlit Cloud
-Version: Production v2.0 - SIMPLE
+Version: Production v2.1 - CORRIGÉ ANTI-BOUCLE
 Plateforme: Streamlit Cloud + Railway API v5.0
 Fonctionnalités: Interface chargés relation client + graphique simple population
 """
@@ -38,10 +38,10 @@ PLOTLY_CONFIG = {
     }
 }
 
-# CSS WCAG pour production + Améliorations visuelles
+# CSS WCAG pour production
 st.markdown("""
 <style>
-/* Styles WCAG conformes + Améliorations visuelles */
+/* Styles WCAG conformes */
 .main-header {
     background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     color: #ffffff;
@@ -60,7 +60,7 @@ st.markdown("""
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
 }
 
-/* NOUVEAUX BOUTONS UNIFORMISÉS */
+/* BOUTONS UNIFORMISÉS */
 .stButton > button {
     background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%) !important;
     color: white !important;
@@ -97,17 +97,6 @@ st.markdown("""
 .stButton > button[kind="primary"]:hover {
     background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
     box-shadow: 0 8px 25px rgba(5, 150, 105, 0.4) !important;
-}
-
-/* BOUTON SECONDAIRE (Modifier) */
-.stButton > button[kind="secondary"] {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3) !important;
-}
-
-.stButton > button[kind="secondary"]:hover {
-    background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
-    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4) !important;
 }
 
 .metric-card {
@@ -180,27 +169,6 @@ st.markdown("""
         padding: 1rem;
     }
 }
-
-/* NOUVEAUX STYLES POUR BOUTON COMPARAISONS */
-.comparison-button {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 12px !important;
-    padding: 0.75rem 1.5rem !important;
-    font-weight: 600 !important;
-    font-size: 1rem !important;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3) !important;
-    transition: all 0.3s ease !important;
-    min-height: 3rem !important;
-    width: 100% !important;
-}
-
-.comparison-button:hover {
-    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -242,29 +210,37 @@ DASHBOARD_FEATURES = [
     'AMT_ANNUITY', 'INSTAL_AMT_PAYMENT_SUM'
 ]
 
-# Session state optimisé
-if 'client_analyzed' not in st.session_state:
-    st.session_state.client_analyzed = False
-if 'client_data' not in st.session_state:
-    st.session_state.client_data = None
-if 'prediction_result' not in st.session_state:
-    st.session_state.prediction_result = None
-if 'refresh_comparison' not in st.session_state:
-    st.session_state.refresh_comparison = False
+# INITIALISATION SESSION STATE SÉCURISÉE
+def init_session_state():
+    """Initialiser session state une seule fois"""
+    defaults = {
+        'client_analyzed': False,
+        'client_data': None,
+        'prediction_result': None,
+        'refresh_comparison': False,
+        'form_submitted': False,
+        'last_analysis_time': None
+    }
+    
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
 
-# Fonctions API
+# Appeler une seule fois
+init_session_state()
 
-@st.cache_data(ttl=300)  # Cache 5 minutes
+# Fonctions API SANS EFFETS DE BORD
+
+@st.cache_data(ttl=300)
 def test_api_connection():
-    """Test de connexion API avec cache"""
+    """Test de connexion API SANS st.error()"""
     try:
         response = requests.get(f"{API_URL}/health", timeout=10)
         if response.status_code == 200:
-            return True, response.json()
-        return False, None
+            return True, response.json(), None
+        return False, None, f"Status {response.status_code}"
     except Exception as e:
-        st.error(f"⚠️ Erreur API: {str(e)}")
-        return False, None
+        return False, None, str(e)
 
 def call_prediction_api(client_data):
     """Appel API de prédiction"""
@@ -287,7 +263,7 @@ def call_prediction_api(client_data):
     except Exception as e:
         return None, f"Erreur connexion: {str(e)}"
 
-@st.cache_data(ttl=600)  # Cache 10 minutes
+@st.cache_data(ttl=600)
 def get_population_distribution(variable):
     """Récupérer distribution d'une variable spécifique"""
     try:
@@ -296,10 +272,9 @@ def get_population_distribution(variable):
             return response.json()
         return None
     except Exception as e:
-        st.warning(f"Distribution {variable} indisponible: {str(e)}")
         return None
 
-@st.cache_data(ttl=600)  # Cache 10 minutes
+@st.cache_data(ttl=600)
 def get_population_data():
     """Récupérer données population avec cache (pour bi-variée)"""
     try:
@@ -308,7 +283,6 @@ def get_population_data():
             return response.json()
         return None
     except Exception as e:
-        st.warning(f"Données population indisponibles: {str(e)}")
         return None
 
 def get_bivariate_data(var1, var2):
@@ -323,13 +297,12 @@ def get_bivariate_data(var1, var2):
             return response.json()
         return None
     except Exception as e:
-        st.warning(f"Analyse bi-variée indisponible: {str(e)}")
         return None
 
 # Interface de saisie client
 
 def create_client_form():
-    """Formulaire de saisie client avec les 10 variables complètes"""
+    """Formulaire de saisie client SANS rerun automatique"""
     
     with st.expander("ℹ️ Guide d'utilisation", expanded=False):
         st.markdown("""
@@ -834,13 +807,12 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
         """)
 
 def display_simple_population_comparison(client_data):
-    """Interface : dropdown + bouton NOUVEAU"""
+    """Interface SANS rerun forcé"""
        
-    # Layout avec bouton à droite du selecteur
+    # Layout avec bouton MAIS sans rerun
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Sélecteur de variable (les 10 variables)
         selected_variable = st.selectbox(
             "Variable à analyser :",
             DASHBOARD_FEATURES,
@@ -848,10 +820,9 @@ def display_simple_population_comparison(client_data):
         )
     
     with col2:
-        # NOUVEAU BOUTON avec style spécial
+        # Bouton qui change juste un flag SANS st.rerun()
         if st.button("📊 Actualiser", key="refresh_comparison", help="Actualiser le graphique"):
             st.session_state.refresh_comparison = not st.session_state.refresh_comparison
-            st.rerun()
     
     # Récupérer les données de distribution
     distribution_data = get_population_distribution(selected_variable)
@@ -871,27 +842,26 @@ def display_simple_population_comparison(client_data):
 
 st.markdown('<div class="main-header">🏦 Dashboard Credit Scoring<br>Prêt à dépenser</div>', unsafe_allow_html=True)
 
-# Vérification API
-api_ok, api_info = test_api_connection()
+# Vérification API SANS effet de bord
+api_ok, api_info, api_error = test_api_connection()
 
 if not api_ok:
-    st.error("""
-    ⚠️ **API non accessible**
-    """)
+    st.error(f"⚠️ **API non accessible**: {api_error}")
     st.stop()
 
-# Sidebar
+# Sidebar AVEC PROTECTION
 with st.sidebar:
     st.markdown("**🏦 Dashboard Credit Scoring<br>Prêt à dépenser**")
     st.markdown("---")
 
     st.markdown("### 📋 Navigation")
     
+    # NOUVEAU CLIENT avec protection
     if st.button("🆕 Nouveau client", use_container_width=True):
-        st.session_state.client_analyzed = False
-        st.session_state.client_data = None
-        st.session_state.prediction_result = None
-        st.rerun()
+        # RESET COMPLET SANS rerun forcé
+        for key in ['client_analyzed', 'client_data', 'prediction_result', 'form_submitted']:
+            if key in st.session_state:
+                st.session_state[key] = False if 'analyzed' in key or 'submitted' in key else None
     
     st.markdown("---")
     st.markdown("**📊 Statut API**")
@@ -901,24 +871,36 @@ with st.sidebar:
     else:
         st.error("❌ Déconnectée")
 
-# Interface principale avec onglets
+# Interface principale AVEC PROTECTION ANTI-BOUCLE
 if not st.session_state.client_analyzed:
     # Étape 1 : Saisie client
     st.markdown("### 📝 Nouveau client")
     
     client_data = create_client_form()
     
-    if st.button("🎯 ANALYSER CE CLIENT", type="primary", use_container_width=True):
+    # PROTECTION ANTI-DOUBLE-CLIC
+    if st.button("🎯 ANALYSER CE CLIENT", type="primary", use_container_width=True, disabled=st.session_state.form_submitted):
+        
+        # Marquer comme soumis IMMÉDIATEMENT
+        st.session_state.form_submitted = True
+        
         with st.spinner("🔄 Analyse en cours..."):
             result, error = call_prediction_api(client_data)
         
         if result:
+            # Mettre à jour TOUT L'ÉTAT en une fois
             st.session_state.client_data = client_data
             st.session_state.prediction_result = result
             st.session_state.client_analyzed = True
+            st.session_state.last_analysis_time = time.time()
+            st.session_state.form_submitted = False  # Reset pour prochaine fois
+            
             st.success("✅ Client analysé avec succès !")
+            
+            # RERUN UNE SEULE FOIS
             st.rerun()
         else:
+            st.session_state.form_submitted = False  # Reset en cas d'erreur
             st.error(f"❌ Erreur d'analyse : {error}")
 
 else:
@@ -928,12 +910,14 @@ else:
     with tab1:
         st.markdown("### 🎯 Résultat de l'analyse")
         
-        # Bouton pour modifier
+        # Bouton pour modifier SANS rerun automatique
         col1, col2 = st.columns([3, 1])
         with col2:
             if st.button("🔧 Modifier", use_container_width=True):
+                # RESET COMPLET sans rerun immédiat
                 st.session_state.client_analyzed = False
-                st.rerun()
+                st.session_state.form_submitted = False
+                # Le rerun se fera naturellement au prochain cycle
         
         # Profil client
         display_client_profile(st.session_state.client_data)
@@ -951,7 +935,7 @@ else:
     with tab2:
         st.markdown("### 📊 Comparaisons avec la base clients")
         
-        # Interface avec bouton actualiser
+        # Interface avec bouton actualiser SANS rerun
         display_simple_population_comparison(st.session_state.client_data)
     
     with tab3:
