@@ -350,29 +350,70 @@ def display_prediction_result(result):
     st.plotly_chart(fig_gauge, use_container_width=True)
 
 def display_feature_importance(result):
-    """Afficher importance des variables"""
+    """Afficher importance des variables avec graphique et tableau détaillé"""
     explanation = result.get('explanation', {})
     top_features = explanation.get('top_features', [])
+    client_data = st.session_state.client_data
     
     if not top_features:
         st.warning("Explications des variables non disponibles")
         return
     
-    st.markdown("#### 🔍 Variables Influentes sur la Décision")
+    st.markdown("#### 🔍 Interprétation de la Décision")
+    st.markdown("**Impact de TOUTES les Variables Saisissables sur la Décision**")
     
-    # Préparer données pour graphique
-    features_df = pd.DataFrame(top_features)
-    if features_df.empty:
-        return
+    # Créer données complètes pour toutes les variables
+    all_features_data = []
     
-    # Traduction des noms
-    features_df['feature_fr'] = features_df['feature'].map(
-        lambda x: FEATURE_TRANSLATIONS.get(x, x.replace('_', ' ').title())
-    )
+    # Variables avec impact SHAP (top 5)
+    for feature in top_features:
+        feature_name = feature.get('feature', '')
+        shap_value = feature.get('shap_value', 0)
+        client_value = client_data.get(feature_name, 0)
+        
+        # Déterminer l'impact
+        if abs(shap_value) < 0.001:
+            impact = "Impact neutre"
+        elif shap_value > 0:
+            impact = "Augmente le risque"
+        else:
+            impact = "Diminue le risque"
+        
+        all_features_data.append({
+            'feature': feature_name,
+            'feature_fr': FEATURE_TRANSLATIONS.get(feature_name, feature_name),
+            'shap_value': shap_value,
+            'client_value': client_value,
+            'impact': impact
+        })
+    
+    # Ajouter les variables restantes avec valeur SHAP = 0
+    remaining_features = [
+        'EXT_SOURCE_1', 'EXT_SOURCE_2', 'DAYS_EMPLOYED', 
+        'NAME_EDUCATION_TYPE_Higher_education', 'INSTAL_AMT_PAYMENT_SUM'
+    ]
+    
+    for feature_name in remaining_features:
+        if not any(f['feature'] == feature_name for f in all_features_data):
+            client_value = client_data.get(feature_name, 0)
+            all_features_data.append({
+                'feature': feature_name,
+                'feature_fr': FEATURE_TRANSLATIONS.get(feature_name, feature_name),
+                'shap_value': 0.0,
+                'client_value': client_value,
+                'impact': "Impact neutre"
+            })
+    
+    # Créer DataFrame pour le graphique
+    features_df = pd.DataFrame(all_features_data)
+    
+    # Trier par valeur SHAP absolue (décroissante)
+    features_df['abs_shap'] = features_df['shap_value'].abs()
+    features_df = features_df.sort_values('abs_shap', ascending=True)
     
     # Couleurs selon impact
     features_df['color'] = features_df['shap_value'].apply(
-        lambda x: "Augmente le risque" if x > 0 else "Diminue le risque"
+        lambda x: "Augmente le risque" if x > 0 else ("Diminue le risque" if x < 0 else "Impact neutre")
     )
     
     # Graphique horizontal
@@ -384,29 +425,77 @@ def display_feature_importance(result):
         color='color',
         color_discrete_map={
             "Augmente le risque": "#ff4444",
-            "Diminue le risque": "#44aa44"
+            "Diminue le risque": "#22c55e",
+            "Impact neutre": "#94a3b8"
         },
-        title="Impact des Variables sur la Décision",
-        labels={'shap_value': 'Impact', 'feature_fr': 'Variables'}
+        title="Impact de TOUTES les Variables Saisissables sur la Décision"
     )
     
     fig.update_layout(
-        height=400,
+        height=500,
         showlegend=True,
-        font={'size': 12}
+        font={'size': 12},
+        xaxis_title="Impact sur la prédiction",
+        yaxis_title="Variables Saisissables"
     )
     
-    fig.add_vline(x=0, line_dash="dash", line_color="gray")
+    fig.add_vline(x=0, line_dash="dash", line_color="gray", line_width=2)
     
     st.plotly_chart(fig, use_container_width=True)
+    
+    # Tableau détaillé
+    with st.expander("📋 Tableau Détaillé de Toutes les Variables Saisissables", expanded=True):
+        
+        # Préparer données pour le tableau
+        table_data = []
+        for _, row in features_df.iterrows():
+            # Formater la valeur client selon le type de variable
+            feature_name = row['feature']
+            client_val = row['client_value']
+            
+            if feature_name == 'CODE_GENDER':
+                formatted_value = "Homme" if client_val == 'M' else "Femme"
+            elif feature_name == 'NAME_EDUCATION_TYPE_Higher_education':
+                formatted_value = "Oui" if client_val == 1 else "Non"
+            elif feature_name == 'DAYS_EMPLOYED':
+                formatted_value = f"{abs(client_val)} jours"
+            elif 'EXT_SOURCE' in feature_name or feature_name == 'PAYMENT_RATE':
+                formatted_value = f"{client_val:.4f}"
+            elif feature_name in ['AMT_ANNUITY', 'INSTAL_AMT_PAYMENT_SUM']:
+                formatted_value = f"{client_val:,.0f} €"
+            else:
+                formatted_value = f"{client_val:.1f}"
+            
+            table_data.append({
+                'Variable': row['feature_fr'],
+                'Valeur SHAP': f"{row['shap_value']:.4f}",
+                'Valeur Client': formatted_value,
+                'Impact': row['impact']
+            })
+        
+        # Afficher le tableau
+        table_df = pd.DataFrame(table_data)
+        st.dataframe(
+            table_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                'Variable': st.column_config.TextColumn('Variable', width='medium'),
+                'Valeur SHAP': st.column_config.TextColumn('Valeur SHAP', width='small'),
+                'Valeur Client': st.column_config.TextColumn('Valeur Client', width='medium'), 
+                'Impact': st.column_config.TextColumn('Impact', width='medium')
+            }
+        )
     
     # Explication pédagogique
     st.markdown("""
     <div class="alert-info">
-        <strong>💡 Lecture du graphique :</strong><br>
-        • <span style="color: #44aa44;"><strong>Vert</strong></span> : Variables qui diminuent le risque<br>
-        • <span style="color: #ff4444;"><strong>Rouge</strong></span> : Variables qui augmentent le risque<br>
-        • <strong>Longueur</strong> : Plus c'est long, plus l'impact est fort
+        <strong>💡 Lecture du graphique des variables saisissables :</strong><br>
+        • <span style="color: #22c55e;"><strong>Barres vertes (valeurs négatives)</strong></span> : Ces variables réduisent le risque de défaut<br>
+        • <span style="color: #ff4444;"><strong>Barres rouges (valeurs positives)</strong></span> : Ces variables augmentent le risque de défaut<br>
+        • <span style="color: #94a3b8;"><strong>Barres grises (proche de zéro)</strong></span> : Ces variables ont un impact neutre ou très faible<br>
+        • <strong>Longueur des barres</strong> : Plus c'est long, plus l'impact est important<br>
+        • <strong>Toutes ces variables peuvent être ajustées dans l'onglet "Simulations"</strong>
     </div>
     """, unsafe_allow_html=True)
 
@@ -592,7 +681,9 @@ else:
         # Résultat scoring
         display_prediction_result(st.session_state.prediction_result)
         
-        # Feature importance
+        st.markdown("---")
+        
+        # Feature importance avec graphique + tableau détaillé
         display_feature_importance(st.session_state.prediction_result)
     
     with tab2:
