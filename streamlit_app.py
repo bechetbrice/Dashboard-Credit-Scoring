@@ -558,7 +558,7 @@ def display_client_profile(client_data):
         st.metric("Hist. paiements", f"{payment_sum:,.0f} €")
 
 def create_simple_population_plot(distribution_data, client_value, variable_name):
-    """Créer graphique simple : points population + étoile client"""
+    """Créer histogramme simple : distribution population + ligne client"""
     
     values = distribution_data.get('values', [])
     
@@ -566,49 +566,34 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
         st.error(f"Aucune donnée disponible pour {variable_name}")
         return
     
-    # Graphique scatter plot simple
+    # Histogramme simple
     fig = go.Figure()
     
-    # Points population (scatter horizontal)
-    fig.add_trace(go.Scatter(
+    # Histogramme population
+    fig.add_trace(go.Histogram(
         x=values,
-        y=[1] * len(values),  # Tous sur la même ligne horizontale
-        mode='markers',
+        nbinsx=30,
+        opacity=0.7,
+        marker_color='lightblue',
         name='Population',
-        marker=dict(
-            size=3,
-            opacity=0.4,
-            color='lightblue',
-            line=dict(width=0)
-        ),
         showlegend=False
     ))
     
-    # Étoile rouge pour le client
-    fig.add_trace(go.Scatter(
-        x=[client_value],
-        y=[1],
-        mode='markers',
-        name='Client',
-        marker=dict(
-            size=25,
-            symbol='star',
-            color='red',
-            line=dict(width=2, color='darkred')
-        ),
-        showlegend=False
-    ))
+    # Ligne verticale rouge pour le client
+    fig.add_vline(
+        x=client_value,
+        line_dash="solid",
+        line_color="red",
+        line_width=4,
+        annotation_text="⭐ Client",
+        annotation_position="top"
+    )
     
     # Configuration du graphique
     fig.update_layout(
         title=f"{FEATURE_TRANSLATIONS.get(variable_name, variable_name)}",
         xaxis_title=f"{FEATURE_TRANSLATIONS.get(variable_name, variable_name)}",
-        yaxis=dict(
-            showticklabels=False,
-            showgrid=False,
-            zeroline=False,
-            range=[0.5, 1.5]
-        ),
+        yaxis_title="Nombre de clients",
         height=400,
         showlegend=False
     )
