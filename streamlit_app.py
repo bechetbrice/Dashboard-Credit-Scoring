@@ -125,6 +125,7 @@ FEATURE_EXPLANATIONS = {
     "DAYS_EMPLOYED": "Ancienneté dans l'emploi actuel (jours négatifs)",
     "PAYMENT_RATE": "Ratio d'endettement par rapport aux revenus",
     "AMT_ANNUITY": "Montant mensuel que le client devra payer",
+    "INSTAL_DPD_MEAN": "Retards moyens sur paiements antérieurs (jours)",
 }
 
 # Session state optimisé
@@ -200,7 +201,7 @@ def get_bivariate_data(var1, var2):
 # Interface de saisie client
 
 def create_client_form():
-    """Formulaire de saisie client simplifié"""
+    """Formulaire de saisie client avec les 10 variables complètes"""
     
     with st.expander("ℹ️ Guide d'utilisation", expanded=False):
         st.markdown("""
@@ -208,6 +209,7 @@ def create_client_form():
         - Les **scores externes** viennent des bureaux de crédit (0 = risqué, 1 = sûr)
         - L'**ancienneté emploi** est en jours négatifs (-1825 = 5 ans)
         - Le **ratio d'endettement** = charges / revenus
+        - Les **retards moyens** = nombre moyen de jours de retard sur les paiements précédents
         """)
     
     col1, col2 = st.columns(2)
@@ -237,6 +239,12 @@ def create_client_form():
             "Ancienneté emploi (jours)", 
             -15000, 0, -1825, 100,
             help="Jours dans l'emploi actuel (négatif)"
+        )
+        
+        instal_dpd_mean = st.slider(
+            "Retards moyens (jours)", 
+            0.0, 30.0, 0.5, 0.1,
+            help="Nombre moyen de jours de retard sur les paiements antérieurs"
         )
         
     with col2:
@@ -273,7 +281,7 @@ def create_client_form():
         "EXT_SOURCE_1": float(ext_source_1),
         "DAYS_EMPLOYED": int(employment_days),
         "CODE_GENDER": "M" if gender == "Homme" else "F",
-        "INSTAL_DPD_MEAN": 0.0,  # Simplifié pour production
+        "INSTAL_DPD_MEAN": float(instal_dpd_mean),
         "PAYMENT_RATE": float(payment_rate),
         "NAME_EDUCATION_TYPE_Higher_education": 1 if education == "Oui" else 0,
         "AMT_ANNUITY": float(annuity),
@@ -412,6 +420,7 @@ def display_client_profile(client_data):
         st.metric("Score Externe 2", f"{client_data.get('EXT_SOURCE_2', 0):.3f}")
         st.metric("Score Externe 3", f"{client_data.get('EXT_SOURCE_3', 0):.3f}")
         st.metric("Score Externe 1", f"{client_data.get('EXT_SOURCE_1', 0):.3f}")
+        st.metric("Retards moyens", f"{client_data.get('INSTAL_DPD_MEAN', 0):.1f} jours")
     
     with col2:
         employment_years = abs(client_data.get('DAYS_EMPLOYED', 0)) / 365.25
