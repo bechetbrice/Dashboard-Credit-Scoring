@@ -855,7 +855,7 @@ def display_simple_population_comparison(client_data):
 
 # Interface principale CORRIGÉE
 
-st.markdown('<div class="main-header">🏦 Dashboard Credit Scoring</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">🏦 Dashboard Credit Scoring<br>Prêt à dépenser</div>', unsafe_allow_html=True)
 
 # Vérification API
 api_ok, api_info, api_error = test_api_connection()
@@ -866,7 +866,7 @@ if not api_ok:
 
 # Sidebar
 with st.sidebar:
-    st.markdown("**🏦 Dashboard Credit Scoring**")
+    st.markdown("**🏦 Dashboard Credit Scoring<br>Prêt à dépenser**")
     st.markdown("---")
 
     st.markdown("### 📋 Navigation")
@@ -1038,10 +1038,48 @@ else:
                             'x': FEATURE_TRANSLATIONS.get(var1, var1),
                             'y': FEATURE_TRANSLATIONS.get(var2, var2)
                         },
-                        opacity=0.6
+                        opacity=0.6,
+                        color_discrete_sequence=['lightblue']
                     )
 
-                    fig.update_layout(height=500)
+                    # NOUVEAU: Ajouter les lignes de croisement pour la position du client
+                    client_x = st.session_state.client_data.get(var1, 0)
+                    client_y = st.session_state.client_data.get(var2, 0)
+                    
+                    # Conversion spéciale pour variables catégorielles du client
+                    if var1 == 'NAME_EDUCATION_TYPE_Higher_education':
+                        client_x = 1 if client_x == 1 else 0
+                    if var2 == 'NAME_EDUCATION_TYPE_Higher_education':
+                        client_y = 1 if client_y == 1 else 0
+                    if var1 == 'CODE_GENDER':
+                        client_x = 1 if client_x == 'M' else 0
+                    if var2 == 'CODE_GENDER':
+                        client_y = 1 if client_y == 'M' else 0
+                    
+                    # Ajouter ligne verticale (position X du client)
+                    fig.add_vline(
+                        x=client_x,
+                        line_dash="dash",
+                        line_color="red",
+                        line_width=3,
+                        annotation_text=f"📍 Client: {FEATURE_TRANSLATIONS.get(var1, var1)}",
+                        annotation_position="top"
+                    )
+                    
+                    # Ajouter ligne horizontale (position Y du client)
+                    fig.add_hline(
+                        y=client_y,
+                        line_dash="dash",
+                        line_color="red",
+                        line_width=3,
+                        annotation_text=f"📍 Client: {FEATURE_TRANSLATIONS.get(var2, var2)}",
+                        annotation_position="right"
+                    )
+
+                    fig.update_layout(
+                        height=500,
+                        showlegend=False
+                    )
                     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
                     # WCAG 1.1.1 : Texte alternatif pour analyse bi-variée
@@ -1051,8 +1089,22 @@ else:
 
                     st.markdown(f"""
                     **Description graphique :** Nuage de points montrant la relation entre {var1_fr} (axe horizontal) et {var2_fr} (axe vertical).
-                    Chaque point représente un client. Corrélation : {correlation:.3f}.
+                    Chaque point bleu représente un client de la population. Les lignes rouges en pointillés indiquent la position du client analysé : 
+                    ligne verticale à {var1_fr} = {client_x}, ligne horizontale à {var2_fr} = {client_y}.
+                    Le croisement des deux lignes localise précisément le client dans la distribution.
+                    Corrélation générale : {correlation:.3f}.
                     {'Relation positive' if correlation > 0.3 else 'Relation négative' if correlation < -0.3 else 'Relation faible'} entre les deux variables.
+                    """)
+
+                    # Analyse positionnement client
+                    percentile_x = sum(1 for val in x_data if val <= client_x) / len(x_data) * 100
+                    percentile_y = sum(1 for val in y_data if val <= client_y) / len(y_data) * 100
+                    
+                    st.info(f"""
+                    📍 **Position du client dans la population :**
+                    • {var1_fr} : {percentile_x:.0f}e percentile (ligne verticale rouge)
+                    • {var2_fr} : {percentile_y:.0f}e percentile (ligne horizontale rouge)
+                    • **Croisement** : intersection des deux lignes = position exacte du client
                     """)
 
                     st.success(f"✅ Analyse terminée - Corrélation: {correlation:.3f}")
@@ -1084,9 +1136,48 @@ else:
                         'x': FEATURE_TRANSLATIONS.get(var1, var1),
                         'y': FEATURE_TRANSLATIONS.get(var2, var2)
                     },
-                    opacity=0.6
+                    opacity=0.6,
+                    color_discrete_sequence=['lightblue']
                 )
-                fig.update_layout(height=500)
+                
+                # Ajouter les lignes de croisement du client aussi depuis le cache
+                client_x = st.session_state.client_data.get(var1, 0)
+                client_y = st.session_state.client_data.get(var2, 0)
+                
+                # Conversion pour variables catégorielles
+                if var1 == 'NAME_EDUCATION_TYPE_Higher_education':
+                    client_x = 1 if client_x == 1 else 0
+                if var2 == 'NAME_EDUCATION_TYPE_Higher_education':
+                    client_y = 1 if client_y == 1 else 0
+                if var1 == 'CODE_GENDER':
+                    client_x = 1 if client_x == 'M' else 0
+                if var2 == 'CODE_GENDER':
+                    client_y = 1 if client_y == 'M' else 0
+                
+                # Ligne verticale
+                fig.add_vline(
+                    x=client_x,
+                    line_dash="dash",
+                    line_color="red",
+                    line_width=3,
+                    annotation_text=f"📍 Client: {FEATURE_TRANSLATIONS.get(var1, var1)}",
+                    annotation_position="top"
+                )
+                
+                # Ligne horizontale
+                fig.add_hline(
+                    y=client_y,
+                    line_dash="dash",
+                    line_color="red",
+                    line_width=3,
+                    annotation_text=f"📍 Client: {FEATURE_TRANSLATIONS.get(var2, var2)}",
+                    annotation_position="right"
+                )
+                
+                fig.update_layout(
+                    height=500,
+                    showlegend=False
+                )
                 st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
 # Footer
