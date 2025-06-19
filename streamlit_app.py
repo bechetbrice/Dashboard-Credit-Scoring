@@ -218,7 +218,10 @@ def init_session_state():
         'client_data': None,
         'prediction_result': None,
         'api_call_in_progress': False,  # NOUVEAU: Protection contre double appel
-        'last_analysis_time': None
+        'last_analysis_time': None,
+        # NOUVEAU: Cache pour éviter re-appels API dans onglets
+        'population_cache': {},
+        'bivariate_cache': {}
     }
     
     for key, value in defaults.items():
@@ -263,9 +266,9 @@ def call_prediction_api(client_data):
     except Exception as e:
         return None, f"Erreur connexion: {str(e)}"
 
-@st.cache_data(ttl=600)
+# CORRECTION: Suppression du cache pour contrôle strict des appels
 def get_population_distribution(variable):
-    """Récupérer distribution d'une variable spécifique"""
+    """Récupérer distribution d'une variable spécifique - SANS CACHE"""
     try:
         response = requests.get(f"{API_URL}/population/{variable}", timeout=15)
         if response.status_code == 200:
@@ -274,9 +277,8 @@ def get_population_distribution(variable):
     except Exception as e:
         return None
 
-@st.cache_data(ttl=600)
 def get_population_data():
-    """Récupérer données population avec cache (pour bi-variée)"""
+    """Récupérer données population - SANS CACHE"""
     try:
         response = requests.get(f"{API_URL}/population_stats", timeout=15)
         if response.status_code == 200:
@@ -285,9 +287,8 @@ def get_population_data():
     except Exception as e:
         return None
 
-@st.cache_data(ttl=600)
 def get_bivariate_data(var1, var2):
-    """Analyse bi-variée"""
+    """Analyse bi-variée - SANS CACHE"""
     try:
         response = requests.post(
             f"{API_URL}/bivariate_analysis",
@@ -808,7 +809,7 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
         """)
 
 def display_simple_population_comparison(client_data):
-    """Interface comparaison population"""
+    """Interface comparaison population - AVEC CONTRÔLE API"""
 
     # Layout avec bouton
     col1, col2 = st.columns([3, 1])
@@ -817,34 +818,44 @@ def display_simple_population_comparison(client_data):
         selected_variable = st.selectbox(
             "Variable à analyser :",
             DASHBOARD_FEATURES,
-            format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x)
+            format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x),
+            key="population_variable_select"
         )
 
     with col2:
-        # Bouton d'actualisation
-        refresh_clicked = st.button("📊 Actualiser", help="Actualiser le graphique")
-
-        if refresh_clicked:
-            st.success("Graphique actualisé !")
-            time.sleep(0.5)
-
-    # Récupérer les données de distribution
-    distribution_data = get_population_distribution(selected_variable)
-
-    if distribution_data:
+        # CORRECTION: Bouton avec appel API contrôlé
+        if st.button("📊 Charger données", help="Charger les données de cette variable", key="load_population_btn"):
+            
+            with st.spinner("🔄 Chargement des données population..."):
+                # APPEL API UNIQUEMENT ICI
+                distribution_data = get_population_distribution(selected_variable)
+            
+            if distribution_data:
+                client_value = client_data.get(selected_variable)
+                
+                if client_value is not None:
+                    # Stocker dans session state pour éviter re-appel
+                    st.session_state[f'population_data_{selected_variable}'] = distribution_data
+                    st.success(f"✅ Données chargées pour {FEATURE_TRANSLATIONS.get(selected_variable, selected_variable)}")
+                    
+                    # Afficher le graphique
+                    create_simple_population_plot(distribution_data, client_value, selected_variable)
+                else:
+                    st.error(f"Valeur client manquante pour {selected_variable}")
+            else:
+                st.error(f"Impossible de charger les données pour {selected_variable}")
+    
+    # Afficher données en cache si disponibles
+    cache_key = f'population_data_{selected_variable}'
+    if cache_key in st.session_state:
+        st.info("📋 Données en cache - Cliquez sur 'Charger données' pour actualiser")
         client_value = client_data.get(selected_variable)
-
         if client_value is not None:
-            # Afficher le graphique simple
-            create_simple_population_plot(distribution_data, client_value, selected_variable)
-        else:
-            st.error(f"Valeur client manquante pour {selected_variable}")
-    else:
-        st.error(f"Impossible de charger les données pour {selected_variable}")
+            create_simple_population_plot(st.session_state[cache_key], client_value, selected_variable)
 
 # Interface principale CORRIGÉE
 
-st.markdown('<div class="main-header">🏦 Dashboard Credit Scoring<br>Prêt à dépenser</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">🏦 Dashboard Credit Scoring</div>', unsafe_allow_html=True)
 
 # Vérification API
 api_ok, api_info, api_error = test_api_connection()
@@ -855,18 +866,27 @@ if not api_ok:
 
 # Sidebar
 with st.sidebar:
-    st.markdown("**🏦 Dashboard Credit Scoring<br>Prêt à dépenser**")
+    st.markdown("**🏦 Dashboard Credit Scoring**")
     st.markdown("---")
 
     st.markdown("### 📋 Navigation")
 
     # NOUVEAU CLIENT avec reset complet
     if st.button("🆕 Nouveau client", use_container_width=True):
-        # Reset complet de l'état
+        # Reset complet de l'état + cache
         st.session_state.client_analyzed = False
         st.session_state.client_data = None
         st.session_state.prediction_result = None
         st.session_state.api_call_in_progress = False
+        st.session_state.population_cache = {}  # NOUVEAU: Reset cache
+        st.session_state.bivariate_cache = {}   # NOUVEAU: Reset cache
+        
+        # Nettoyer aussi les clés de cache dynamiques
+        keys_to_remove = [key for key in st.session_state.keys() if 
+                         key.startswith('population_data_') or key.startswith('bivariate_')]
+        for key in keys_to_remove:
+            del st.session_state[key]
+            
         st.rerun()
 
     st.markdown("---")
@@ -963,7 +983,8 @@ else:
             var1 = st.selectbox(
                 "Variable 1",
                 DASHBOARD_FEATURES,
-                format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x)
+                format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x),
+                key="bivariate_var1"
             )
 
         with col2:
@@ -971,12 +992,15 @@ else:
                 "Variable 2",
                 DASHBOARD_FEATURES,
                 index=1,
-                format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x)
+                format_func=lambda x: FEATURE_TRANSLATIONS.get(x, x),
+                key="bivariate_var2"
             )
 
-        if st.button("📈 Analyser Relation", use_container_width=True):
-            with st.spinner("Analyse en cours..."):
-                # Récupérer les vraies distributions pour les 2 variables
+        # CORRECTION: Bouton avec appel API contrôlé
+        if st.button("📈 Analyser Relation", use_container_width=True, key="analyze_bivariate_btn"):
+            
+            with st.spinner("🔄 Analyse bi-variée en cours..."):
+                # APPELS API UNIQUEMENT ICI
                 dist1 = get_population_distribution(var1)
                 dist2 = get_population_distribution(var2)
 
@@ -995,6 +1019,15 @@ else:
                     min_len = min(len(values1), len(values2))
                     x_data = values1[:min_len]
                     y_data = values2[:min_len]
+
+                    # Stocker en cache pour éviter re-appel
+                    cache_key = f'bivariate_{var1}_{var2}'
+                    st.session_state[cache_key] = {
+                        'x_data': x_data,
+                        'y_data': y_data,
+                        'var1': var1,
+                        'var2': var2
+                    }
 
                     # Graphique de corrélation avec TOUT l'échantillon
                     fig = px.scatter(
@@ -1022,6 +1055,8 @@ else:
                     {'Relation positive' if correlation > 0.3 else 'Relation négative' if correlation < -0.3 else 'Relation faible'} entre les deux variables.
                     """)
 
+                    st.success(f"✅ Analyse terminée - Corrélation: {correlation:.3f}")
+
                 else:
                     st.error("Données insuffisantes pour une des variables")
             else:
@@ -1032,6 +1067,27 @@ else:
                 if not dist2:
                     missing_vars.append(var2)
                 st.warning(f"Variables indisponibles : {missing_vars}")
+        
+        # Afficher analyse en cache si disponible
+        cache_key = f'bivariate_{var1}_{var2}'
+        if cache_key in st.session_state:
+            cached_data = st.session_state[cache_key]
+            if cached_data['var1'] == var1 and cached_data['var2'] == var2:
+                st.info("📋 Analyse en cache - Cliquez sur 'Analyser Relation' pour actualiser")
+                
+                # Re-afficher le graphique depuis le cache
+                fig = px.scatter(
+                    x=cached_data['x_data'],
+                    y=cached_data['y_data'],
+                    title=f"Relation entre {FEATURE_TRANSLATIONS.get(var1, var1)} et {FEATURE_TRANSLATIONS.get(var2, var2)} (Cache)",
+                    labels={
+                        'x': FEATURE_TRANSLATIONS.get(var1, var1),
+                        'y': FEATURE_TRANSLATIONS.get(var2, var2)
+                    },
+                    opacity=0.6
+                )
+                fig.update_layout(height=500)
+                st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
 # Footer
 st.markdown("---")
