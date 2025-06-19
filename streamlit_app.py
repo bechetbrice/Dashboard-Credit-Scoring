@@ -434,6 +434,10 @@ def display_prediction_result(result):
     decision = prediction.get('decision', 'UNKNOWN')
     decision_fr = prediction.get('decision_fr', decision)
     risk_level = prediction.get('risk_level', 'Inconnu')
+    
+    # RÉCUPÉRATION DU VRAI THRESHOLD DEPUIS L'API
+    threshold = prediction.get('threshold', 0.1)  # Récupère le seuil réel de l'API
+    threshold_percent = threshold * 100
 
     # Résultat principal
     if decision == "REFUSE":
@@ -453,7 +457,7 @@ def display_prediction_result(result):
         </div>
         """, unsafe_allow_html=True)
 
-    # JAUGE MODERNISÉE
+    # JAUGE MODERNISÉE AVEC SEUIL DYNAMIQUE
     fig_gauge = go.Figure(go.Indicator(
         mode="gauge+number",
         value=probability * 100,
@@ -482,15 +486,15 @@ def display_prediction_result(result):
             'borderwidth': 3,
             'bordercolor': "#e5e7eb",
             'steps': [
-                {'range': [0, 10], 'color': '#dcfce7', 'name': 'Faible'},
-                {'range': [10, 25], 'color': '#fef3c7', 'name': 'Modéré'},
-                {'range': [25, 50], 'color': '#fed7aa', 'name': 'Élevé'},
-                {'range': [50, 100], 'color': '#fee2e2', 'name': 'Très élevé'}
+                {'range': [0, threshold_percent], 'color': '#dcfce7', 'name': 'Acceptable'},
+                {'range': [threshold_percent, min(threshold_percent * 2.5, 100)], 'color': '#fef3c7', 'name': 'Modéré'},
+                {'range': [min(threshold_percent * 2.5, 100), min(threshold_percent * 5, 100)], 'color': '#fed7aa', 'name': 'Élevé'},
+                {'range': [min(threshold_percent * 5, 100), 100], 'color': '#fee2e2', 'name': 'Très élevé'}
             ],
             'threshold': {
                 'line': {'color': "#dc2626", 'width': 6},
                 'thickness': 0.9,
-                'value': 10
+                'value': threshold_percent  # UTILISE LE VRAI SEUIL
             }
         }
     ))
@@ -505,10 +509,67 @@ def display_prediction_result(result):
 
     st.plotly_chart(fig_gauge, use_container_width=True, config=PLOTLY_CONFIG)
 
-    # WCAG 1.1.1 : Texte alternatif pour la jauge
+    # NOUVEAU: AFFICHAGE PROBABILITÉ ET ÉCART AVEC SEUIL
+    probability_percent = probability * 100
+    ecart_avec_seuil = probability_percent - threshold_percent
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric(
+            label="📊 Probabilité de défaut",
+            value=f"{probability_percent:.2f}%",
+            help="Probabilité calculée par le modèle"
+        )
+    
+    with col2:
+        st.metric(
+            label="🎯 Seuil de décision",
+            value=f"{threshold_percent:.2f}%",
+            help="Seuil optimal issu du fichier optimal_threshold_optimized.pkl"
+        )
+    
+    with col3:
+        # Couleur selon l'écart
+        if ecart_avec_seuil < 0:
+            delta_color = "normal"  # Vert (sous le seuil)
+            ecart_text = f"-{abs(ecart_avec_seuil):.2f}%"
+            interpretation = "Sous le seuil"
+        else:
+            delta_color = "inverse"  # Rouge (au-dessus du seuil)
+            ecart_text = f"+{ecart_avec_seuil:.2f}%"
+            interpretation = "Au-dessus du seuil"
+            
+        st.metric(
+            label="📈 Écart avec seuil",
+            value=ecart_text,
+            delta=interpretation,
+            delta_color=delta_color,
+            help="Distance par rapport au seuil de décision"
+        )
+
+    # ANALYSE DÉTAILLÉE DE L'ÉCART
+    if abs(ecart_avec_seuil) < 1:  # Très proche du seuil
+        st.warning(f"""
+        ⚠️ **Client proche du seuil** : Écart de seulement {abs(ecart_avec_seuil):.2f}% 
+        → Décision sensible aux variations des données
+        """)
+    elif ecart_avec_seuil < -5:  # Bien en dessous
+        st.success(f"""
+        ✅ **Profil très sûr** : {abs(ecart_avec_seuil):.2f}% sous le seuil 
+        → Risque très faible, décision robuste
+        """)
+    elif ecart_avec_seuil > 5:  # Bien au-dessus
+        st.error(f"""
+        ❌ **Profil très risqué** : {ecart_avec_seuil:.2f}% au-dessus du seuil 
+        → Risque élevé, décision robuste
+        """)
+
+    # WCAG 1.1.1 : Texte alternatif pour la jauge AVEC VRAI SEUIL
     st.markdown(f"""
     **Description graphique :** Jauge de risque affichant {probability:.1%} de probabilité de défaut de paiement.
-    Le seuil de décision est fixé à 10%. Ce client se situe dans la zone {'rouge (risque élevé)' if probability >= 0.1 else 'verte (risque faible)'}.
+    Le seuil de décision est fixé à {threshold:.1%} (ligne rouge). Ce client se situe dans la zone {'rouge (risque élevé)' if probability >= threshold else 'verte (risque faible)'}.
+    Écart avec le seuil : {ecart_avec_seuil:+.2f} points de pourcentage.
     """)
 
 def display_feature_importance(result):
