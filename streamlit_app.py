@@ -1,3 +1,10 @@
+"""
+Dashboard Credit Scoring Production - Streamlit Cloud
+Version: Production v2.2 - CORRECTION API BOUTON UNIQUEMENT
+Plateforme: Streamlit Cloud + Railway API v5.0
+Fonctionnalités: Interface chargés relation client + graphique simple population
+"""
+
 import streamlit as st
 import requests
 import pandas as pd
@@ -203,17 +210,17 @@ DASHBOARD_FEATURES = [
     'AMT_ANNUITY', 'INSTAL_AMT_PAYMENT_SUM'
 ]
 
-# INITIALISATION SESSION STATE SÉCURISÉE
+# INITIALISATION SESSION STATE CORRIGÉE
 def init_session_state():
-    """Initialiser session state une seule fois"""
+    """Initialiser session state une seule fois - VERSION CORRIGÉE"""
     defaults = {
         'client_analyzed': False,
         'client_data': None,
         'prediction_result': None,
-        'form_submitted': False,
+        'api_call_in_progress': False,  # NOUVEAU: Protection contre double appel
         'last_analysis_time': None
     }
-
+    
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
@@ -221,7 +228,8 @@ def init_session_state():
 # Appeler une seule fois
 init_session_state()
 
-# Fonctions API SANS EFFETS DE BORD
+# Fonctions API CORRIGÉES
+
 @st.cache_data(ttl=300)
 def test_api_connection():
     """Test de connexion API SANS st.error()"""
@@ -233,9 +241,9 @@ def test_api_connection():
     except Exception as e:
         return False, None, str(e)
 
-@st.cache_data(ttl=300)
+# CORRECTION PRINCIPALE: Suppression du cache pour éviter les appels involontaires
 def call_prediction_api(client_data):
-    """Appel API de prédiction"""
+    """Appel API de prédiction - SANS CACHE pour contrôle strict"""
     try:
         response = requests.post(
             f"{API_URL}/predict_dashboard",
@@ -293,9 +301,10 @@ def get_bivariate_data(var1, var2):
         return None
 
 # Interface de saisie client
-def create_client_form():
-    """Formulaire de saisie client SANS rerun automatique"""
 
+def create_client_form():
+    """Formulaire de saisie client"""
+    
     with st.expander("ℹ️ Guide d'utilisation", expanded=False):
         st.markdown("""
         ### 🚀 **Prêt à commencer ?**
@@ -416,6 +425,7 @@ def create_client_form():
     return client_data
 
 # Affichage des résultats
+
 def display_prediction_result(result):
     """Afficher résultat de prédiction avec jauge modernisée"""
     prediction = result.get('prediction', {})
@@ -798,9 +808,9 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
         """)
 
 def display_simple_population_comparison(client_data):
-    """Interface SANS rerun forcé"""
+    """Interface comparaison population"""
 
-    # Layout avec bouton MAIS sans rerun
+    # Layout avec bouton
     col1, col2 = st.columns([3, 1])
 
     with col1:
@@ -811,10 +821,9 @@ def display_simple_population_comparison(client_data):
         )
 
     with col2:
-        # SOLUTION: Bouton sans modifier session_state
+        # Bouton d'actualisation
         refresh_clicked = st.button("📊 Actualiser", help="Actualiser le graphique")
 
-        # Optionnel: juste pour information visuelle
         if refresh_clicked:
             st.success("Graphique actualisé !")
             time.sleep(0.5)
@@ -833,29 +842,32 @@ def display_simple_population_comparison(client_data):
     else:
         st.error(f"Impossible de charger les données pour {selected_variable}")
 
-# Interface principale
+# Interface principale CORRIGÉE
+
 st.markdown('<div class="main-header">🏦 Dashboard Credit Scoring<br>Prêt à dépenser</div>', unsafe_allow_html=True)
 
-# Vérification API SANS effet de bord
+# Vérification API
 api_ok, api_info, api_error = test_api_connection()
 
 if not api_ok:
     st.error(f"⚠️ **API non accessible**: {api_error}")
     st.stop()
 
-# Sidebar AVEC PROTECTION
+# Sidebar
 with st.sidebar:
     st.markdown("**🏦 Dashboard Credit Scoring<br>Prêt à dépenser**")
     st.markdown("---")
 
     st.markdown("### 📋 Navigation")
 
-    # NOUVEAU CLIENT avec protection
+    # NOUVEAU CLIENT avec reset complet
     if st.button("🆕 Nouveau client", use_container_width=True):
-        # RESET COMPLET SANS rerun forcé
-        for key in ['client_analyzed', 'client_data', 'prediction_result', 'form_submitted']:
-            if key in st.session_state:
-                st.session_state[key] = False if 'analyzed' in key or 'submitted' in key else None
+        # Reset complet de l'état
+        st.session_state.client_analyzed = False
+        st.session_state.client_data = None
+        st.session_state.prediction_result = None
+        st.session_state.api_call_in_progress = False
+        st.rerun()
 
     st.markdown("---")
     st.markdown("**📊 Statut API**")
@@ -865,37 +877,47 @@ with st.sidebar:
     else:
         st.error("❌ Déconnectée")
 
-# Interface principale AVEC PROTECTION ANTI-BOUCLE
+# INTERFACE PRINCIPALE CORRIGÉE - APPEL API UNIQUEMENT SUR BOUTON
+
 if not st.session_state.client_analyzed:
     # Étape 1 : Saisie client
     st.markdown("### 📝 Nouveau client")
 
+    # Formulaire de saisie
     client_data = create_client_form()
 
-    # PROTECTION ANTI-DOUBLE-CLIC
-    if st.button("🎯 ANALYSER CE CLIENT", type="primary", use_container_width=True, disabled=st.session_state.form_submitted):
-
-        # Marquer comme soumis IMMÉDIATEMENT
-        st.session_state.form_submitted = True
-
-        with st.spinner("🔄 Analyse en cours..."):
-            result, error = call_prediction_api(client_data)
-
-        if result:
-            # Mettre à jour TOUT L'ÉTAT en une fois
-            st.session_state.client_data = client_data
-            st.session_state.prediction_result = result
-            st.session_state.client_analyzed = True
-            st.session_state.last_analysis_time = time.time()
-            st.session_state.form_submitted = False  # Reset pour prochaine fois
-
-            st.success("✅ Client analysé avec succès !")
-
-            # RERUN UNE SEULE FOIS
-            st.rerun()
-        else:
-            st.session_state.form_submitted = False  # Reset en cas d'erreur
-            st.error(f"❌ Erreur d'analyse : {error}")
+    # BOUTON AVEC APPEL API DIRECT - VERSION CORRIGÉE
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button(
+            "🎯 ANALYSER CE CLIENT",
+            type="primary",
+            use_container_width=True,
+            disabled=st.session_state.api_call_in_progress,  # Protection contre double-clic
+            key="analyze_client_btn"
+        ):
+            # MARQUER APPEL EN COURS
+            st.session_state.api_call_in_progress = True
+            
+            # APPEL API DIRECT - UNIQUEMENT ICI
+            with st.spinner("🔄 Analyse en cours..."):
+                result, error = call_prediction_api(client_data)
+            
+            # TRAITEMENT RÉSULTAT
+            if result:
+                # Mise à jour complète de l'état
+                st.session_state.client_data = client_data
+                st.session_state.prediction_result = result
+                st.session_state.client_analyzed = True
+                st.session_state.last_analysis_time = time.time()
+                st.session_state.api_call_in_progress = False
+                
+                st.success("✅ Client analysé avec succès !")
+                st.rerun()
+            else:
+                # Reset en cas d'erreur
+                st.session_state.api_call_in_progress = False
+                st.error(f"❌ Erreur d'analyse : {error}")
 
 else:
     # Étape 2 : Résultats et analyses
@@ -904,14 +926,14 @@ else:
     with tab1:
         st.markdown("### 🎯 Résultat de l'analyse")
 
-        # Bouton pour modifier SANS rerun automatique
+        # Bouton pour modifier
         col1, col2 = st.columns([3, 1])
         with col2:
             if st.button("🔧 Modifier", use_container_width=True):
-                # RESET COMPLET sans rerun immédiat
+                # Reset pour retour au formulaire
                 st.session_state.client_analyzed = False
-                st.session_state.form_submitted = False
-                # Le rerun se fera naturellement au prochain cycle
+                st.session_state.api_call_in_progress = False
+                st.rerun()
 
         # Profil client
         display_client_profile(st.session_state.client_data)
@@ -929,7 +951,7 @@ else:
     with tab2:
         st.markdown("### 📊 Comparaisons avec la base clients")
 
-        # Interface avec bouton actualiser SANS rerun
+        # Interface comparaison population
         display_simple_population_comparison(st.session_state.client_data)
 
     with tab3:
