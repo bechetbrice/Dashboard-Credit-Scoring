@@ -1,6 +1,7 @@
 """
 Dashboard Credit Scoring Production - Streamlit Cloud
 Plateforme: Streamlit Cloud + Railway API v5.0
+WCAG 2.1 AA CONFORME
 """
 
 import streamlit as st
@@ -36,7 +37,7 @@ PLOTLY_CONFIG = {
     }
 }
 
-# CSS WCAG pour production
+# CSS WCAG pour production - CORRECTIONS UNITÉS RELATIVES
 st.markdown("""
 <style>
 /* Styles WCAG conformes */
@@ -58,12 +59,12 @@ st.markdown("""
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
 }
 
-/* BOUTONS UNIFORMISÉS */
+/* BOUTONS UNIFORMISÉS - CORRECTIONS UNITÉS */
 .stButton > button {
     background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%) !important;
     color: white !important;
     border: none !important;
-    border-radius: 12px !important;
+    border-radius: 0.75rem !important;
     padding: 0.75rem 1.5rem !important;
     font-weight: 600 !important;
     font-size: 1rem !important;
@@ -84,6 +85,11 @@ st.markdown("""
 .stButton > button:active {
     transform: translateY(0px) !important;
     box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3) !important;
+}
+
+.stButton > button:focus {
+    outline: 2px solid #2563eb !important;
+    outline-offset: 2px !important;
 }
 
 /* BOUTON PRIMAIRE SPÉCIAL */
@@ -362,7 +368,6 @@ def create_client_form():
         )
 
     with col2:
-        st.markdown("**💼 Informations Complémentaires**")
 
         # Conversion M/F pour l'affichage
         default_gender = "Homme" if default_values.get('CODE_GENDER') == 'M' else "Femme"
@@ -575,7 +580,7 @@ def display_feature_importance(result):
         st.warning("Explications des variables non disponibles")
         return
 
-    st.markdown("#### 🔍 Interprétation de la décision")
+    st.markdown("### 🔍 Interprétation de la décision")
 
     # Créer données complètes pour toutes les variables
     all_features_data = []
@@ -726,7 +731,7 @@ def display_feature_importance(result):
 
 def display_client_profile(client_data):
     """Afficher profil client complet"""
-    st.markdown("#### 👤 Profil Client")
+    st.markdown("### 👤 Profil Client")
 
     col1, col2, col3 = st.columns(3)
 
@@ -808,7 +813,7 @@ def create_simple_population_plot(distribution_data, client_value, variable_name
             line_dash="solid",
             line_color="red",
             line_width=4,
-            annotation_text="⭐ Client",
+            annotation_text="📍 Client",
             annotation_position="top"
         )
     except (TypeError, ValueError):
@@ -907,9 +912,11 @@ def display_simple_population_comparison(client_data):
         if client_value is not None:
             create_simple_population_plot(st.session_state[cache_key], client_value, selected_variable)
 
+# CORRECTION WCAG 2.4.2 : STRUCTURE HIÉRARCHIQUE COMPLÈTE
 # Interface principale CORRIGÉE
 
-st.markdown('<div class="main-header">🏦 Dashboard Credit Scoring<br>Prêt à dépenser</div>', unsafe_allow_html=True)
+# TITRE PRINCIPAL H1
+st.markdown("# 🏦 Dashboard Credit Scoring - Prêt à dépenser")
 
 # Vérification API
 api_ok, api_info, api_error = test_api_connection()
@@ -954,8 +961,8 @@ with st.sidebar:
 # INTERFACE PRINCIPALE - APPEL API UNIQUEMENT SUR BOUTON
 
 if not st.session_state.client_analyzed:
-    # Saisie client
-    st.markdown("### 📝 Nouveau client")
+    # TITRE H2
+    st.markdown("## 📝 Saisie des Données Client")
 
     # Formulaire de saisie
     client_data = create_client_form()
@@ -994,11 +1001,15 @@ if not st.session_state.client_analyzed:
                 st.error(f"❌ Erreur d'analyse : {error}")
 
 else:
+    # TITRE H2 PRINCIPAL
+    st.markdown("## 🎯 Analyse du Dossier Client")
+    
     # Résultats et analyses
     tab1, tab2, tab3 = st.tabs(["🎯 Résultats", "📊 Comparaisons", "🔧 Analyses bi-variées"])
 
     with tab1:
-        st.markdown("### 🎯 Résultat de l'analyse")
+        # TITRE H3
+        st.markdown("### 📊 Résultats de l'Analyse")
 
         # Bouton pour modifier
         col1, col2 = st.columns([3, 1])
@@ -1014,6 +1025,8 @@ else:
 
         st.markdown("---")
 
+        # TITRE H4
+        st.markdown("#### 🎯 Décision de Crédit")
         # Résultat scoring
         display_prediction_result(st.session_state.prediction_result)
 
@@ -1023,13 +1036,15 @@ else:
         display_feature_importance(st.session_state.prediction_result)
 
     with tab2:
-        st.markdown("### 📊 Comparaisons avec la base clients")
+        # TITRE H3
+        st.markdown("### 📊 Comparaisons avec la Population")
 
         # Interface comparaison population
         display_simple_population_comparison(st.session_state.client_data)
 
     with tab3:
-        st.markdown("### 🔧 Analyse bi-variée")
+        # TITRE H3
+        st.markdown("### 🔧 Analyses Bi-variées")
 
         col1, col2 = st.columns(2)
 
@@ -1249,11 +1264,6 @@ with col2:
     st.markdown("• Analyse de crédit instantanée")
     st.markdown("• Explications transparentes")
     st.markdown("• Comparaisons population")
-    st.markdown("• Interface chargé relation client")
 
 with col3:
     st.markdown("**♿ Accessibilité WCAG 2.1**")
-    st.markdown("• Navigation clavier optimisée")
-    st.markdown("• Contrastes élevés")
-    st.markdown("• Textes alternatifs")
-    st.markdown("• Interface responsive")
