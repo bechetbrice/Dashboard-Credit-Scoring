@@ -230,7 +230,7 @@ init_session_state()
 
 # Fonctions API
 
-@st.cache_data(ttl=300)
+#@st.cache_data(ttl=300)
 def test_api_connection():
     """Test de connexion API SANS st.error()"""
     try:
