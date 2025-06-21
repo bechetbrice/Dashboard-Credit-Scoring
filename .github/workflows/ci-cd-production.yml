@@ -1,7 +1,7 @@
 # =============================================================================
 # GITHUB ACTIONS CI/CD - DASHBOARD CREDIT SCORING
 # Version: Production v1.0
-# Plateformes: Streamlit Cloud + Railway
+# Plateformes: Streamlit + Railway
 # =============================================================================
 
 name: CI/CD Dashboard Credit Scoring
@@ -18,112 +18,108 @@ env:
   NODE_VERSION: '18'
 
 jobs:
-  # =============================================================================
   # JOB 1: VALIDATION CODE ET STRUCTURE
-  # =============================================================================
   code-validation:
-    name: 🔍 Validation Code & Structure
+    name: Validation Code & Structure
     runs-on: ubuntu-latest
     
     steps:
-    - name: 📥 Checkout du code
+    - name: Checkout du code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
     
-    - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
     
-    - name: 📦 Installation des dépendances
+    - name: Installation des dépendances
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest flake8 black isort safety bandit
     
-    - name: 📁 Vérification structure projet
+    - name: Vérification structure projet
       run: |
-        echo "🔍 VÉRIFICATION STRUCTURE OBLIGATOIRE"
+        echo "VÉRIFICATION STRUCTURE OBLIGATOIRE"
         echo "=================================="
         
         # Fichiers critiques pour Streamlit Cloud
-        test -f "streamlit_app.py" && echo "✅ streamlit_app.py présent" || echo "❌ streamlit_app.py MANQUANT"
-        test -f "requirements.txt" && echo "✅ requirements.txt présent" || echo "❌ requirements.txt MANQUANT"
-        test -f ".streamlit/config.toml" && echo "✅ config.toml présent" || echo "❌ config.toml MANQUANT"
-        test -f "README.md" && echo "✅ README.md présent" || echo "❌ README.md MANQUANT"
+        test -f "streamlit_app.py" && echo "streamlit_app.py présent" || echo "streamlit_app.py MANQUANT"
+        test -f "requirements.txt" && echo "requirements.txt présent" || echo "requirements.txt MANQUANT"
+        test -f ".streamlit/config.toml" && echo "config.toml présent" || echo "config.toml MANQUANT"
+        test -f "README.md" && echo "README.md présent" || echo "README.md MANQUANT"
         
         # Structure API (optionnelle)
         if [ -d "api" ]; then
-          echo "📁 Dossier API détecté"
-          test -f "api/app_production.py" && echo "✅ API production présente" || echo "⚠️ API production manquante"
-          test -f "api/requirements.txt" && echo "✅ API requirements présent" || echo "⚠️ API requirements manquant"
-          test -f "api/gunicorn.conf.py" && echo "✅ Config Gunicorn présente" || echo "⚠️ Config Gunicorn manquante"
+          echo "Dossier API détecté"
+          test -f "api/app_production.py" && echo "API production présente" || echo "API production manquante"
+          test -f "api/requirements.txt" && echo "API requirements présent" || echo "API requirements manquant"
+          test -f "api/gunicorn.conf.py" && echo "Config Gunicorn présente" || echo "Config Gunicorn manquante"
         fi
         
         # Configuration déploiement
-        test -f "railway.json" && echo "✅ Config Railway présente" || echo "ℹ️ Config Railway optionnelle"
-        test -f ".gitignore" && echo "✅ .gitignore présent" || echo "⚠️ .gitignore manquant"
+        test -f "railway.json" && echo "Config Railway présente" || echo "Config Railway optionnelle"
+        test -f ".gitignore" && echo ".gitignore présent" || echo ".gitignore manquant"
         
         echo "=================================="
-        echo "📊 Structure du projet :"
+        echo "Structure du projet :"
         ls -la
     
-    - name: 🧪 Tests d'import Python critiques
+    - name: Tests d'import Python critiques
       run: |
-        echo "🧪 TESTS D'IMPORT CRITIQUES"
+        echo "TESTS D'IMPORT CRITIQUES"
         echo "============================"
         
         # Imports essentiels pour Streamlit
-        python -c "import streamlit; print('✅ Streamlit:', streamlit.__version__)"
-        python -c "import pandas; print('✅ Pandas:', pandas.__version__)"
-        python -c "import numpy; print('✅ Numpy:', numpy.__version__)"
-        python -c "import plotly; print('✅ Plotly:', plotly.__version__)"
+        python -c "import streamlit; print('Streamlit:', streamlit.__version__)"
+        python -c "import pandas; print('Pandas:', pandas.__version__)"
+        python -c "import numpy; print('Numpy:', numpy.__version__)"
+        python -c "import plotly; print('Plotly:', plotly.__version__)"
         
         # Imports ML
-        python -c "import sklearn; print('✅ Scikit-learn:', sklearn.__version__)"
-        python -c "import lightgbm; print('✅ LightGBM:', lightgbm.__version__)"
-        python -c "import joblib; print('✅ Joblib')"
+        python -c "import sklearn; print('Scikit-learn:', sklearn.__version__)"
+        python -c "import lightgbm; print('LightGBM:', lightgbm.__version__)"
+        python -c "import joblib; print('Joblib')"
         
         # Imports optionnels
-        python -c "import shap; print('✅ SHAP:', shap.__version__)" || echo "⚠️ SHAP optionnel"
-        python -c "import flask; print('✅ Flask:', flask.__version__)" || echo "ℹ️ Flask pour API optionnelle"
+        python -c "import shap; print('SHAP:', shap.__version__)" || echo "SHAP optionnel"
+        python -c "import flask; print('Flask:', flask.__version__)" || echo "Flask pour API optionnelle"
         
         echo "============================"
-        echo "🎉 Tous les imports critiques réussis"
+        echo "Tous les imports critiques réussis"
 
-  # =============================================================================
   # JOB 2: VALIDATION APPLICATION STREAMLIT
-  # =============================================================================
   streamlit-validation:
-    name: 📊 Validation Streamlit App
+    name: Validation Streamlit App
     runs-on: ubuntu-latest
     needs: code-validation
     
     steps:
-    - name: 📥 Checkout du code
+    - name: Checkout du code
       uses: actions/checkout@v4
     
-    - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
     
-    - name: 📦 Installation dépendances Streamlit
+    - name: Installation dépendances Streamlit
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: 🔍 Validation syntax streamlit_app.py
+    - name: Validation syntax streamlit_app.py
       run: |
-        echo "🔍 VALIDATION SYNTAX STREAMLIT"
+        echo "VALIDATION SYNTAX STREAMLIT"
         echo "=============================="
         
         # Vérification compilation Python
         python -m py_compile streamlit_app.py
-        echo "✅ Compilation Python réussie"
+        echo "Compilation Python réussie"
         
         # Vérification imports Streamlit
         python -c "
@@ -136,95 +132,93 @@ jobs:
         # Parse AST pour vérifier structure
         try:
             tree = ast.parse(content)
-            print('✅ Structure AST valide')
+            print('Structure AST valide')
         except SyntaxError as e:
-            print(f'❌ Erreur syntax: {e}')
+            print(f'Erreur syntax: {e}')
             sys.exit(1)
         
         # Vérifier import streamlit
         if 'import streamlit' in content:
-            print('✅ Import Streamlit détecté')
+            print('Import Streamlit détecté')
         else:
-            print('❌ Import Streamlit manquant')
+            print('Import Streamlit manquant')
             sys.exit(1)
         
-        print('🎉 Validation Streamlit réussie')
+        print('Validation Streamlit réussie')
         "
     
-    - name: 🚀 Test démarrage Streamlit (simulation)
+    - name: Test démarrage Streamlit (simulation)
       run: |
-        echo "🚀 SIMULATION DÉMARRAGE STREAMLIT"
+        echo "SIMULATION DÉMARRAGE STREAMLIT"
         echo "================================="
         
         # Test import de l'app sans exécution
         timeout 30s python -c "
         import streamlit as st
-        print('✅ Streamlit importé correctement')
+        print('Streamlit importé correctement')
         
         # Simulation config
         st.set_page_config(page_title='Test', layout='wide')
-        print('✅ Configuration Streamlit OK')
+        print('Configuration Streamlit OK')
         
-        print('🎉 Streamlit prêt pour déploiement')
-        " || echo "⚠️ Timeout après 30s (normal en CI)"
+        print('Streamlit prêt pour déploiement')
+        " || echo "Timeout après 30s (normal en CI)"
         
         echo "================================="
-        echo "✅ Validation Streamlit terminée"
+        echo "Validation Streamlit terminée"
 
-  # =============================================================================
   # JOB 3: VALIDATION API (SI PRÉSENTE)
-  # =============================================================================
   api-validation:
-    name: 🌐 Validation API Flask
+    name: Validation API Flask
     runs-on: ubuntu-latest
     needs: code-validation
     
     steps:
-    - name: 📥 Checkout du code
+    - name: Checkout du code
       uses: actions/checkout@v4
     
-    - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
     
-    - name: 📦 Installation dépendances API
+    - name: Installation dépendances API
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest requests
     
-    - name: 🔍 Validation code API
+    - name: Validation code API
       run: |
-        echo "🔍 VALIDATION CODE API"
+        echo "VALIDATION CODE API"
         echo "====================="
         
         # Compilation API
         python -m py_compile api/app_production.py
-        echo "✅ Compilation API réussie"
+        echo "Compilation API réussie"
         
         # Test import Flask app
         cd api && python -c "
         from app_production import app
-        print('✅ Import app Flask réussi')
-        print(f'✅ App name: {app.name}')
+        print('Import app Flask réussi')
+        print(f'App name: {app.name}')
         
         # Vérifier routes critiques
         routes = [rule.rule for rule in app.url_map.iter_rules()]
-        print(f'✅ Routes détectées: {len(routes)}')
+        print(f'Routes détectées: {len(routes)}')
         
         if '/health' in routes:
-            print('✅ Route /health présente')
+            print('Route /health présente')
         else:
-            print('⚠️ Route /health manquante')
+            print('Route /health manquante')
             
-        print('🎉 Validation API réussie')
+        print('Validation API réussie')
         "
     
-    - name: 🧪 Test API endpoints
+    - name: Test API endpoints
       run: |
-        echo "🧪 TEST ENDPOINTS API"
+        echo "TEST ENDPOINTS API"
         echo "===================="
         
         cd api
@@ -236,133 +230,129 @@ jobs:
         sleep 10
         
         # Test endpoint health
-        curl -f http://localhost:5000/health || echo "⚠️ Health endpoint non accessible (normal en CI)"
+        curl -f http://localhost:5000/health || echo "Health endpoint non accessible (normal en CI)"
         
         # Arrêter API
         kill $API_PID 2>/dev/null || true
         
-        echo "🎉 Tests API terminés"
+        echo "Tests API terminés"
 
-  # =============================================================================
   # JOB 4: TESTS DE SÉCURITÉ
-  # =============================================================================
   security-scan:
-    name: 🔒 Scan Sécurité
+    name: Scan Sécurité
     runs-on: ubuntu-latest
     needs: code-validation
     
     steps:
-    - name: 📥 Checkout du code
+    - name: Checkout du code
       uses: actions/checkout@v4
     
-    - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
     
-    - name: 📦 Installation outils sécurité
+    - name: Installation outils sécurité
       run: |
         python -m pip install --upgrade pip
         pip install safety bandit semgrep
     
-    - name: 🔍 Scan vulnérabilités dépendances
+    - name: Scan vulnérabilités dépendances
       run: |
-        echo "🔍 SCAN VULNÉRABILITÉS"
+        echo "SCAN VULNÉRABILITÉS"
         echo "====================="
         
         # Scan des dépendances
         safety check --json || echo "⚠️ Vulnérabilités détectées - vérifiez manually"
         
-        echo "✅ Scan sécurité terminé"
+        echo "Scan sécurité terminé"
     
-    - name: 🔐 Scan code avec Bandit
+    - name: Scan code avec Bandit
       run: |
-        echo "🔐 SCAN CODE SÉCURITÉ"
+        echo "SCAN CODE SÉCURITÉ"
         echo "===================="
         
         # Scan sécurité du code Python
-        bandit -r . -f json -o bandit-report.json || echo "⚠️ Issues sécurité détectées"
+        bandit -r . -f json -o bandit-report.json || echo "Issues sécurité détectées"
         
         # Afficher résumé
-        bandit -r . --severity-level medium || echo "⚠️ Vérifiez les recommandations sécurité"
+        bandit -r . --severity-level medium || echo "Vérifiez les recommandations sécurité"
         
-        echo "✅ Scan code terminé"
+        echo "Scan code terminé"
 
-  # =============================================================================
   # JOB 5: VALIDATION DÉPLOIEMENT
-  # =============================================================================
   deployment-readiness:
-    name: 🚀 Validation Déploiement
+    name: Validation Déploiement
     runs-on: ubuntu-latest
     needs: [code-validation, streamlit-validation]
     
     steps:
-    - name: 📥 Checkout du code
+    - name: Checkout du code
       uses: actions/checkout@v4
     
-    - name: 🎯 Vérification critères projet
+    - name: Vérification critères projet
       run: |
-        echo "🎯 VÉRIFICATION CRITÈRES PROJET"
+        echo "VÉRIFICATION CRITÈRES PROJET"
         echo "==============================="
         
         # Critères Dashboard obligatoires
-        echo "📊 CRITÈRES DASHBOARD :"
+        echo "CRITÈRES DASHBOARD :"
         
         # 1. Parcours utilisateur
         if grep -q "tab1\|tab2\|tab3" streamlit_app.py; then
-            echo "✅ Parcours utilisateur (onglets) détecté"
+            echo "Parcours utilisateur (onglets) détecté"
         else
-            echo "⚠️ Vérifiez parcours utilisateur"
+            echo "Vérifiez parcours utilisateur"
         fi
         
         # 2. Graphiques interactifs
         if grep -q "plotly\|st.plotly_chart" streamlit_app.py; then
-            echo "✅ Graphiques interactifs (Plotly) détectés"
+            echo "Graphiques interactifs (Plotly) détectés"
         else
-            echo "⚠️ Vérifiez graphiques interactifs"
+            echo "Vérifiez graphiques interactifs"
         fi
         
         # 3. Accessibilité WCAG
         if grep -q "alt\|accessibility\|WCAG" streamlit_app.py .streamlit/config.toml; then
-            echo "✅ Éléments accessibilité détectés"
+            echo "Éléments accessibilité détectés"
         else
-            echo "⚠️ Vérifiez conformité WCAG"
+            echo "Vérifiez conformité WCAG"
         fi
         
         # 4. Configuration production
         if [ -f ".streamlit/config.toml" ]; then
-            echo "✅ Configuration Streamlit présente"
+            echo "Configuration Streamlit présente"
         else
-            echo "❌ Configuration Streamlit manquante"
+            echo "Configuration Streamlit manquante"
         fi
         
         echo "==============================="
-        echo "📋 RÉSUMÉ VALIDATION :"
-        echo "✅ Code Python valide"
-        echo "✅ Structure projet correcte"
-        echo "✅ Dépendances installables"
-        echo "✅ Prêt pour Streamlit Cloud"
+        echo "RÉSUMÉ VALIDATION :"
+        echo "Code Python valide"
+        echo "Structure projet correcte"
+        echo "Dépendances installables"
+        echo "Prêt pour Streamlit Cloud"
         
         if [ -f "api/app_production.py" ]; then
-            echo "✅ API optionnelle disponible"
+            echo "API optionnelle disponible"
         fi
         
         echo "==============================="
-        echo "🎉 PROJET VALIDÉ POUR DÉPLOIEMENT"
+        echo "PROJET VALIDÉ POUR DÉPLOIEMENT"
     
-    - name: 📋 Génération rapport déploiement
+    - name: Génération rapport déploiement
       run: |
-        echo "📋 RAPPORT DÉPLOIEMENT" > deployment-report.md
+        echo "RAPPORT DÉPLOIEMENT" > deployment-report.md
         echo "======================" >> deployment-report.md
         echo "" >> deployment-report.md
-        echo "## ✅ Validations Réussies" >> deployment-report.md
+        echo "## Validations Réussies" >> deployment-report.md
         echo "- Structure projet complète" >> deployment-report.md
         echo "- Code Python compilable" >> deployment-report.md
         echo "- Dépendances installables" >> deployment-report.md
         echo "- Configuration Streamlit OK" >> deployment-report.md
         echo "" >> deployment-report.md
-        echo "## 🚀 Prêt pour déploiement sur :" >> deployment-report.md
+        echo "## Prêt pour déploiement sur :" >> deployment-report.md
         echo "- **Streamlit Cloud** : https://share.streamlit.io" >> deployment-report.md
         
         if [ -f "api/app_production.py" ]; then
@@ -370,12 +360,12 @@ jobs:
         fi
         
         echo "" >> deployment-report.md
-        echo "## 📊 Métriques" >> deployment-report.md
+        echo "## Métriques" >> deployment-report.md
         echo "- Fichiers Python : $(find . -name "*.py" | wc -l)" >> deployment-report.md
         echo "- Lignes de code : $(find . -name "*.py" -exec wc -l {} + | tail -1 | awk '{print $1}')" >> deployment-report.md
         echo "- Dépendances : $(wc -l < requirements.txt)" >> deployment-report.md
         echo "" >> deployment-report.md
-        echo "## 🎯 Prochaines étapes" >> deployment-report.md
+        echo "## Prochaines étapes" >> deployment-report.md
         echo "1. Déployer sur Streamlit Cloud" >> deployment-report.md
         echo "2. Récupérer URL publique" >> deployment-report.md
         echo "3. Tester toutes fonctionnalités" >> deployment-report.md
@@ -383,49 +373,47 @@ jobs:
         
         cat deployment-report.md
     
-    - name: 📤 Upload rapport
+    - name: Upload rapport
       uses: actions/upload-artifact@v4
       with:
         name: deployment-report
         path: deployment-report.md
 
-  # =============================================================================
   # JOB 6: NOTIFICATION RÉSULTATS
-  # =============================================================================
   notify-results:
-    name: 📢 Notification Résultats
+    name: Notification Résultats
     runs-on: ubuntu-latest
     needs: [code-validation, streamlit-validation, deployment-readiness]
     if: always()
     
     steps:
-    - name: 📊 Résumé validation
+    - name: Résumé validation
       run: |
-        echo "📊 RÉSUMÉ VALIDATION CI/CD"
+        echo "RÉSUMÉ VALIDATION CI/CD"
         echo "=========================="
-        echo "🔍 Validation code : ${{ needs.code-validation.result }}"
-        echo "📊 Validation Streamlit : ${{ needs.streamlit-validation.result }}"
-        echo "🚀 Validation déploiement : ${{ needs.deployment-readiness.result }}"
+        echo "Validation code : ${{ needs.code-validation.result }}"
+        echo "Validation Streamlit : ${{ needs.streamlit-validation.result }}"
+        echo "Validation déploiement : ${{ needs.deployment-readiness.result }}"
         
         if [[ "${{ needs.code-validation.result }}" == "success" && 
               "${{ needs.streamlit-validation.result }}" == "success" && 
               "${{ needs.deployment-readiness.result }}" == "success" ]]; then
           echo ""
-          echo "🎉 VALIDATION COMPLÈTE RÉUSSIE!"
-          echo "✅ Projet prêt pour déploiement Streamlit Cloud"
-          echo "🔗 Déployez sur : https://share.streamlit.io"
+          echo "VALIDATION COMPLÈTE RÉUSSIE!"
+          echo "Projet prêt pour déploiement Streamlit Cloud"
+          echo "Déployez sur : https://share.streamlit.io"
           echo ""
-          echo "📋 Checklist finale :"
-          echo "□ Créer app sur Streamlit Cloud"
-          echo "□ Connecter repo GitHub"
-          echo "□ Pointer vers streamlit_app.py"
-          echo "□ Configurer secrets si nécessaire"
-          echo "□ Déployer et récupérer URL"
+          echo "Checklist finale :"
+          echo "- Créer app sur Streamlit Cloud"
+          echo "- Connecter repo GitHub"
+          echo "- Pointer vers streamlit_app.py"
+          echo "- Configurer secrets si nécessaire"
+          echo "- Déployer et récupérer URL"
         else
           echo ""
-          echo "⚠️ VALIDATION PARTIELLEMENT ÉCHOUÉE"
+          echo "VALIDATION PARTIELLEMENT ÉCHOUÉE"
           echo "Vérifiez les logs ci-dessus pour corriger"
         fi
         
         echo "=========================="
-        echo "🏆 Fin validation CI/CD Dashboard Credit Scoring"
+        echo "Fin validation CI/CD Dashboard Credit Scoring"
