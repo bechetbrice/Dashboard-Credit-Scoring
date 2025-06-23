@@ -1,7 +1,5 @@
 """
 Dashboard Credit Scoring Production - Streamlit Cloud
-Plateforme: Streamlit Cloud + Railway API v5.0
-WCAG 2.1 AA CONFORME
 """
 
 import streamlit as st
@@ -37,10 +35,10 @@ PLOTLY_CONFIG = {
     }
 }
 
-# CSS WCAG pour production - CORRECTIONS UNITÉS RELATIVES
+# CSS
 st.markdown("""
 <style>
-/* Styles WCAG conformes */
+/* Styles WCAG */
 .main-header {
     background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     color: #ffffff;
@@ -59,7 +57,7 @@ st.markdown("""
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
 }
 
-/* BOUTONS UNIFORMISÉS - CORRECTIONS UNITÉS */
+/* Boutons */
 .stButton > button {
     background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%) !important;
     color: white !important;
@@ -92,7 +90,7 @@ st.markdown("""
     outline-offset: 2px !important;
 }
 
-/* BOUTON PRIMAIRE SPÉCIAL */
+/* Bouton primaire */
 .stButton > button[kind="primary"] {
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
     box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3) !important;
@@ -238,7 +236,7 @@ init_session_state()
 
 @st.cache_data(ttl=300)
 def test_api_connection():
-    """Test de connexion API SANS st.error()"""
+    """Test de connexion API sans st.error()"""
     try:
         response = requests.get(f"{API_URL}/health", timeout=10)
         if response.status_code == 200:
@@ -249,7 +247,6 @@ def test_api_connection():
 
 # Suppression du cache pour éviter les appels involontaires
 def call_prediction_api(client_data):
-    """Appel API de prédiction - SANS CACHE pour contrôle strict"""
     try:
         response = requests.post(
             f"{API_URL}/predict_dashboard",
@@ -271,7 +268,6 @@ def call_prediction_api(client_data):
 
 # Suppression du cache pour contrôle strict des appels
 def get_population_distribution(variable):
-    """Récupérer distribution d'une variable spécifique - SANS CACHE"""
     try:
         response = requests.get(f"{API_URL}/population/{variable}", timeout=15)
         if response.status_code == 200:
@@ -281,7 +277,7 @@ def get_population_distribution(variable):
         return None
 
 def get_population_data():
-    """Récupérer données population - SANS CACHE"""
+    """Récupérer données population - sans cache"""
     try:
         response = requests.get(f"{API_URL}/population_stats", timeout=15)
         if response.status_code == 200:
@@ -291,7 +287,7 @@ def get_population_data():
         return None
 
 def get_bivariate_data(var1, var2):
-    """Analyse bi-variée - SANS CACHE"""
+    """Analyse bi-variée - sans cache"""
     try:
         response = requests.post(
             f"{API_URL}/bivariate_analysis",
@@ -318,7 +314,7 @@ def create_client_form():
         4. **Simulez** différents scénarios si nécessaire
         """)
 
-    # Valeurs par défaut (ou valeurs précédentes si modification)
+    # Valeurs par défaut ou valeurs précédentes si modification
     default_values = st.session_state.client_data if st.session_state.client_data else {}
 
     col1, col2 = st.columns(2)
@@ -912,10 +908,7 @@ def display_simple_population_comparison(client_data):
         if client_value is not None:
             create_simple_population_plot(st.session_state[cache_key], client_value, selected_variable)
 
-# CORRECTION WCAG 2.4.2 : STRUCTURE HIÉRARCHIQUE COMPLÈTE
-# Interface principale CORRIGÉE
-
-# TITRE PRINCIPAL H1
+# Titre principal H1
 st.markdown("# 🏦 Dashboard Credit Scoring - Prêt à dépenser")
 
 # Vérification API
@@ -927,14 +920,12 @@ if not api_ok:
 
 # Sidebar
 with st.sidebar:
-    st.markdown("**🏦 Dashboard Credit Scoring**")
-    st.markdown("---")
 
     st.markdown("### 📋 Navigation")
 
-    # NOUVEAU CLIENT avec reset complet
+    # Nouveau client avec reset
     if st.button("🆕 Nouveau client", use_container_width=True):
-        # Reset complet de l'état + cache
+        # Reset de l'état + cache
         st.session_state.client_analyzed = False
         st.session_state.client_data = None
         st.session_state.prediction_result = None
@@ -942,7 +933,7 @@ with st.sidebar:
         st.session_state.population_cache = {}  # Reset cache
         st.session_state.bivariate_cache = {}   # Reset cache
         
-        # Nettoyer aussi les clés de cache dynamiques
+        # Nettoyer les clés de cache dynamiques
         keys_to_remove = [key for key in st.session_state.keys() if 
                          key.startswith('population_data_') or key.startswith('bivariate_')]
         for key in keys_to_remove:
@@ -958,11 +949,11 @@ with st.sidebar:
     else:
         st.error("❌ Déconnectée")
 
-# INTERFACE PRINCIPALE - APPEL API UNIQUEMENT SUR BOUTON
+# Appels API uniquement sur action bouton
 
 if not st.session_state.client_analyzed:
     # TITRE H2
-    st.markdown("## 📝 Saisie des Données Client")
+    st.markdown("## 📝 Saisie des données du client")
 
     # Formulaire de saisie
     client_data = create_client_form()
@@ -977,14 +968,14 @@ if not st.session_state.client_analyzed:
             disabled=st.session_state.api_call_in_progress,  # Protection contre double-clic
             key="analyze_client_btn"
         ):
-            # MARQUER APPEL EN COURS
+            # Marquer l'appel en cours
             st.session_state.api_call_in_progress = True
             
-            # APPEL API DIRECT - UNIQUEMENT ICI
+            # Appal API
             with st.spinner("🔄 Analyse en cours..."):
                 result, error = call_prediction_api(client_data)
             
-            # TRAITEMENT RÉSULTAT
+            # Résultat
             if result:
                 # Mise à jour complète de l'état
                 st.session_state.client_data = client_data
@@ -1001,15 +992,15 @@ if not st.session_state.client_analyzed:
                 st.error(f"❌ Erreur d'analyse : {error}")
 
 else:
-    # TITRE H2 PRINCIPAL
-    st.markdown("## 🎯 Analyse du Dossier Client")
+    # Titre H2 PRINCIPAL
+    st.markdown("## 🎯 Analyse du dossier du client")
     
     # Résultats et analyses
     tab1, tab2, tab3 = st.tabs(["🎯 Résultats", "📊 Comparaisons", "🔧 Analyses bi-variées"])
 
     with tab1:
-        # TITRE H3
-        st.markdown("### 📊 Résultats de l'Analyse")
+        # Titre H3
+        st.markdown("### 📊 Résultats de l'analyse")
 
         # Bouton pour modifier
         col1, col2 = st.columns([3, 1])
@@ -1025,8 +1016,8 @@ else:
 
         st.markdown("---")
 
-        # TITRE H4
-        st.markdown("#### 🎯 Décision de Crédit")
+        # Titre H4
+        st.markdown("#### 🎯 Décision de crédit")
         # Résultat scoring
         display_prediction_result(st.session_state.prediction_result)
 
@@ -1036,15 +1027,15 @@ else:
         display_feature_importance(st.session_state.prediction_result)
 
     with tab2:
-        # TITRE H3
-        st.markdown("### 📊 Comparaisons avec la Population")
+        # Titre H3
+        st.markdown("### 📊 Comparaisons avec la population")
 
         # Interface comparaison population
         display_simple_population_comparison(st.session_state.client_data)
 
     with tab3:
-        # TITRE H3
-        st.markdown("### 🔧 Analyses Bi-variées")
+        # Titre H3
+        st.markdown("### 🔧 Analyses bi-variées")
 
         col1, col2 = st.columns(2)
 
@@ -1065,11 +1056,11 @@ else:
                 key="bivariate_var2"
             )
 
-        # Bouton avec appel API contrôlé
+        # Bouton avec appel API
         if st.button("📈 Analyser Relation", use_container_width=True, key="analyze_bivariate_btn"):
             
             with st.spinner("🔄 Analyse bi-variée en cours..."):
-                # APPELS API UNIQUEMENT ICI
+                # Appels API
                 dist1 = get_population_distribution(var1)
                 dist2 = get_population_distribution(var2)
 
@@ -1098,7 +1089,7 @@ else:
                         'var2': var2
                     }
 
-                    # Graphique de corrélation avec TOUT l'échantillon
+                    # Graphique de corrélation avec l'échantillon complet
                     fig = px.scatter(
                         x=x_data,
                         y=y_data,
