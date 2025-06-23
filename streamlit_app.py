@@ -1016,7 +1016,7 @@ def display_bivariate_analysis(cached_data, var1, var2, client_data):
    • **Croisement** : intersection des deux lignes = position exacte du client
    """)
 
-   st.success(f"✅ Analyse terminée - Corrélation: {correlation:.3f}")
+   st.success(f"✅ Analyse terminée")
 
 # Titre principal H1
 st.markdown("# 🏦 Dashboard Credit Scoring - Prêt à dépenser")
@@ -1030,12 +1030,10 @@ if not api_ok:
 
 # Sidebar
 with st.sidebar:
-   st.markdown("**🏦 Dashboard Credit Scoring**")
-   st.markdown("---")
 
    st.markdown("### 📋 Navigation")
 
-   # NOUVEAU CLIENT avec reset complet
+   # Nouveu client avec reset complet
    if st.button("🆕 Nouveau client", use_container_width=True):
        # Reset complet de l'état + cache
        st.session_state.client_analyzed = False
