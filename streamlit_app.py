@@ -1055,7 +1055,7 @@ else:
             )
 
         # Bouton avec appel API
-        if st.button("📈 Analyser Relation", use_container_width=True, key="analyze_bivariate_btn"):
+        if st.button("📈 Analyser la relation", use_container_width=True, key="analyze_bivariate_btn"):
             
             with st.spinner("🔄 Analyse bi-variée en cours..."):
                 # Appels API
@@ -1150,22 +1150,7 @@ else:
                     Chaque point bleu représente un client de la population. Les lignes rouges en pointillés indiquent la position du client analysé : 
                     ligne verticale à {var1_fr} = {client_x}, ligne horizontale à {var2_fr} = {client_y}.
                     Le croisement des deux lignes localise précisément le client dans la distribution.
-                    Corrélation générale : {correlation:.3f}.
-                    {'Relation positive' if correlation > 0.3 else 'Relation négative' if correlation < -0.3 else 'Relation faible'} entre les deux variables.
                     """)
-
-                    # Analyse positionnement client
-                    percentile_x = sum(1 for val in x_data if val <= client_x) / len(x_data) * 100
-                    percentile_y = sum(1 for val in y_data if val <= client_y) / len(y_data) * 100
-                    
-                    st.info(f"""
-                    📍 **Position du client dans la population :**
-                    • {var1_fr} : {percentile_x:.0f}e percentile (ligne verticale rouge)
-                    • {var2_fr} : {percentile_y:.0f}e percentile (ligne horizontale rouge)
-                    • **Croisement** : intersection des deux lignes = position exacte du client
-                    """)
-
-                    st.success(f"✅ Analyse terminée - Corrélation: {correlation:.3f}")
 
                 else:
                     st.error("Données insuffisantes pour une des variables")
