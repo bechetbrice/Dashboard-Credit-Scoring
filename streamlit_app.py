@@ -1102,7 +1102,7 @@ if not st.session_state.client_analyzed:
 
 else:
    # Titre H2
-   st.markdown("## 🎯 Analyse du Dossier Client")
+   st.markdown("## 🎯 Analyse du dossier du client")
    
    # Résultats et analyses
    tab1, tab2, tab3 = st.tabs(["🎯 Résultats", "📊 Comparaisons", "🔧 Analyses bi-variées"])
@@ -1181,7 +1181,7 @@ else:
                        del st.session_state[cache_key]
                        st.rerun()
                
-               # Afficher UNIQUEMENT les résultats depuis le cache
+               # Afficher les résultats depuis le cache
                display_bivariate_analysis(cached_data, var1, var2, st.session_state.client_data)
            else:
                # Cache obsolète, le supprimer
