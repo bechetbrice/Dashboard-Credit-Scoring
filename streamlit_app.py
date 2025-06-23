@@ -1,5 +1,5 @@
 """
-Dashboard Credit Scoring Production - Streamlit Cloud
+Dashboard Credit Scoring Production
 """
 
 import streamlit as st
@@ -727,7 +727,7 @@ def display_feature_importance(result):
 
 def display_client_profile(client_data):
     """Afficher profil client complet"""
-    st.markdown("### 👤 Profil Client")
+    st.markdown("### 👤 Profil du client")
 
     col1, col2, col3 = st.columns(3)
 
@@ -878,11 +878,11 @@ def display_simple_population_comparison(client_data):
         )
 
     with col2:
-        # CORRECTION: Bouton avec appel API contrôlé
+        # Bouton avec appel API contrôlé
         if st.button("📊 Charger données", help="Charger les données de cette variable", key="load_population_btn"):
             
             with st.spinner("🔄 Chargement des données population..."):
-                # APPEL API UNIQUEMENT ICI
+                # Appel API
                 distribution_data = get_population_distribution(selected_variable)
             
             if distribution_data:
@@ -945,14 +945,12 @@ with st.sidebar:
     st.markdown("**📊 Statut API**")
     if api_info:
         st.success("✅ Connectée")
-        st.caption(f"Version: {api_info.get('version', 'N/A')}")
     else:
         st.error("❌ Déconnectée")
 
 # Appels API uniquement sur action bouton
-
 if not st.session_state.client_analyzed:
-    # TITRE H2
+    # Titre H2
     st.markdown("## 📝 Saisie des données du client")
 
     # Formulaire de saisie
