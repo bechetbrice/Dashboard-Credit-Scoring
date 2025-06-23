@@ -253,7 +253,6 @@ def init_session_state():
 init_session_state()
 
 # Fonctions API avec gestion d'erreur robuste
-
 def safe_api_call(url, data=None, timeout=15):
    """Appel API sécurisé avec gestion d'erreur robuste"""
    try:
@@ -302,7 +301,7 @@ def get_population_distribution_cached(variable):
        st.error(f"Erreur chargement {variable}: {error}")
        return None
 
-# Fonctions API sans cache (pour contrôle utilisateur)
+# Fonctions API sans cache pour contrôle utilisateur
 def call_prediction_api(client_data):
    """Appel API de prédiction sans cache pour contrôle strict"""
    result, error = safe_api_call(f"{API_URL}/predict_dashboard", 
@@ -910,11 +909,11 @@ def display_simple_population_comparison(client_data):
        )
 
    with col2:
-       # Bouton avec appel API contrôlé
+       # Bouton avec appel API
        if st.button("📊 Charger données", help="Charger les données de cette variable", key="load_population_btn"):
            
            with st.spinner("🔄 Chargement des données population..."):
-               # APPEL API UNIQUEMENT ICI
+               # Appel API
                distribution_data = get_population_distribution(selected_variable)
            
            if distribution_data:
@@ -1003,9 +1002,7 @@ def display_bivariate_analysis(cached_data, var1, var2, client_data):
    **Description graphique :** Nuage de points montrant la relation entre {var1_fr} (axe horizontal) et {var2_fr} (axe vertical).
    Chaque point bleu représente un client de la population. Les lignes rouges en pointillés indiquent la position du client analysé : 
    ligne verticale à {var1_fr} = {client_x}, ligne horizontale à {var2_fr} = {client_y}.
-   Le croisement des deux lignes localise précisément le client dans la distribution.
-   Corrélation générale : {correlation:.3f}.
-   {'Relation positive' if correlation > 0.3 else 'Relation négative' if correlation < -0.3 else 'Relation faible'} entre les deux variables.
+   Le croisement des deux lignes localise le client dans la distribution.
    """)
 
    # Analyse positionnement client
@@ -1060,7 +1057,6 @@ with st.sidebar:
    st.markdown("**📊 Statut API**")
    if api_info:
        st.success("✅ Connectée")
-       st.caption(f"Version: {api_info.get('version', 'N/A')}")
    else:
        st.error("❌ Déconnectée")
 
@@ -1080,17 +1076,17 @@ if not st.session_state.client_analyzed:
            "🎯 ANALYSER CE CLIENT",
            type="primary",
            use_container_width=True,
-           disabled=st.session_state.api_call_in_progress,  # Protection contre double-clic
+           disabled=st.session_state.api_call_in_progress,  # contre double-clic
            key="analyze_client_btn"
        ):
-           # MARQUER APPEL EN COURS
+           # Noter l'appel en cours
            st.session_state.api_call_in_progress = True
            
-           # APPEL API DIRECT - UNIQUEMENT ICI
+           # Appel API
            with st.spinner("🔄 Analyse en cours..."):
                result, error = call_prediction_api(client_data)
            
-           # TRAITEMENT RÉSULTAT
+           # Résultat
            if result:
                # Mise à jour complète de l'état
                st.session_state.client_data = client_data
@@ -1107,14 +1103,14 @@ if not st.session_state.client_analyzed:
                st.error(f"❌ Erreur d'analyse : {error}")
 
 else:
-   # TITRE H2 PRINCIPAL
+   # Titre H2
    st.markdown("## 🎯 Analyse du Dossier Client")
    
    # Résultats et analyses
    tab1, tab2, tab3 = st.tabs(["🎯 Résultats", "📊 Comparaisons", "🔧 Analyses bi-variées"])
 
    with tab1:
-       # TITRE H3
+       # Titre H3
        st.markdown("### 📊 Résultats de l'Analyse")
 
        # Bouton pour modifier
@@ -1131,26 +1127,26 @@ else:
 
        st.markdown("---")
 
-       # TITRE H4
-       st.markdown("#### 🎯 Décision de Crédit")
+       # Titre H4
+       st.markdown("#### 🎯 Décision de crédit")
        # Résultat scoring
        display_prediction_result(st.session_state.prediction_result)
 
        st.markdown("---")
 
-       # Feature importance avec graphique + tableau détaillé
+       # Feature importance avec graphique et tableau détaillé
        display_feature_importance(st.session_state.prediction_result)
 
    with tab2:
-       # TITRE H3
-       st.markdown("### 📊 Comparaisons avec la Population")
+       # Titre H3
+       st.markdown("### 📊 Comparaisons avec la population")
 
        # Interface comparaison population
        display_simple_population_comparison(st.session_state.client_data)
 
    with tab3:
-       # TITRE H3 - SECTION CORRIGÉE POUR ÉVITER LA DUPLICATION
-       st.markdown("### 🔧 Analyses Bi-variées")
+       # Titre H3
+       st.markdown("### 🔧 Analyses bi-variées")
 
        col1, col2 = st.columns(2)
 
@@ -1201,7 +1197,7 @@ else:
            if st.button("📈 Analyser la relation", use_container_width=True, key="analyze_bivariate_btn"):
                
                with st.spinner("🔄 Analyse bi-variée en cours..."):
-                   # APPELS API
+                   # Appels API
                    dist1 = get_population_distribution(var1)
                    dist2 = get_population_distribution(var2)
 
